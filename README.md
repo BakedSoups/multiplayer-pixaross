@@ -2,6 +2,8 @@
 
 A small Go + Ebitengine vertical-slice prototype for a cozy, DS-era-inspired nonogram puzzle game. It loads puzzle JSON from `assets/`, generates clues from the solution, lets you draw with a right-side tool trigger, and reveals pixel art when solved.
 
+<img width="1183" height="1376" alt="image" src="https://github.com/user-attachments/assets/2315be46-67d8-43d6-9ac9-fa36fb654cb8" />
+
 ## Run
 
 ```sh
@@ -57,6 +59,8 @@ For a local web dev loop, install `watchexec`, then run:
 ```sh
 PORT=8000 ./scripts/dev-web.sh
 ```
+
+<img width="813" height="1174" alt="image" src="https://github.com/user-attachments/assets/5a22b50c-164d-4e11-b366-419a6ed7ea4b" />
 
 That serves `static/`, rebuilds `static/game.wasm` when Go/assets change, and reloads the browser on localhost after the WASM file changes.
 
