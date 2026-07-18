@@ -299,6 +299,10 @@ func (g *Game) updateCommunityInput() {
 				g.publishCommunityDraft(start + slot)
 				return
 			}
+			if communityDraftDeleteButton(slot).Contains(x, y) {
+				g.deleteCommunityDraft(start + slot)
+				return
+			}
 		}
 		if communityPrevButton().Contains(x, y) && g.communityPage > 0 {
 			g.communityPage--
@@ -390,6 +394,10 @@ func (g *Game) updateCommunityInput() {
 			}
 			if communityPackPublishButton(slot).Contains(x, y) {
 				g.publishLocalPack(slot)
+				return
+			}
+			if communityPackDeleteButton(slot).Contains(x, y) {
+				g.deleteCommunityPack(slot)
 				return
 			}
 		}

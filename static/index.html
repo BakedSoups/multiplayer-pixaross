@@ -175,6 +175,7 @@
 	};
 	window.communityAccountLabel = () => readCommunitySession()?.access_token ? "Account" : "Sign in";
 	window.communitySignedIn = () => Boolean(readCommunitySession()?.access_token);
+	window.confirmCommunityDelete = (kind, title) => confirm(`Delete ${kind} "${title}"? This cannot be undone.`);
 	window.requestCommunityPublish = async (raw) => {
 	  const { url, key } = communityConfig();
 	  if (!url || !key) return setCommunityResult("community cloud is not configured yet");

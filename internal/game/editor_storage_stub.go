@@ -10,6 +10,8 @@ func communityAccountLabel() string { return "Sign in" }
 
 func communitySignedIn() bool { return false }
 
+func confirmCommunityDelete(string, string) bool { return true }
+
 func saveCommunityData(string) bool { return false }
 
 func loadCommunityData() string { return "" }

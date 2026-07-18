@@ -234,6 +234,43 @@ func (g *Game) publishCommunityDraft(index int) {
 	}
 }
 
+func (g *Game) deleteCommunityDraft(index int) {
+	if index < 0 || index >= len(g.communityLibrary.Drafts) {
+		return
+	}
+	draft := g.communityLibrary.Drafts[index]
+	for _, pack := range g.communityLibrary.Packs {
+		for _, item := range pack.Items {
+			if item.LevelID == draft.ID {
+				g.showCommunityNotice("remove this art from its pack first")
+				return
+			}
+		}
+	}
+	if !confirmCommunityDelete("art", draft.Title) {
+		return
+	}
+	g.communityLibrary.Drafts = append(g.communityLibrary.Drafts[:index], g.communityLibrary.Drafts[index+1:]...)
+	g.saveCommunityLibrary()
+	if g.communityPage > 0 && g.communityPage*communityDraftsPerPage >= len(g.communityLibrary.Drafts) {
+		g.communityPage--
+	}
+	g.showCommunityNotice("art deleted")
+}
+
+func (g *Game) deleteCommunityPack(index int) {
+	if index < 0 || index >= len(g.communityLibrary.Packs) {
+		return
+	}
+	pack := g.communityLibrary.Packs[index]
+	if !confirmCommunityDelete("pack", pack.Title) {
+		return
+	}
+	g.communityLibrary.Packs = append(g.communityLibrary.Packs[:index], g.communityLibrary.Packs[index+1:]...)
+	g.saveCommunityLibrary()
+	g.showCommunityNotice("pack deleted")
+}
+
 func (g *Game) markCommunityDraftPublished(id string) {
 	for i := range g.communityLibrary.Drafts {
 		if g.communityLibrary.Drafts[i].ID != id {
