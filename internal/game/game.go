@@ -88,6 +88,10 @@ type Game struct {
 	communityCreators    []community.CreatorProfile
 	selectedCreator      int
 	communityPlayReturn  communityView
+	communityGallery     []community.GalleryItem
+	galleryKind          string
+	gallerySort          string
+	selectedGallery      int
 	communityNotice      string
 	communityNoticeUntil time.Time
 }
@@ -134,6 +138,9 @@ func New(puzzlePath string) (*Game, error) {
 		profileArt:       initialProfileArt(),
 		communityLibrary: loadCommunityLibrary(),
 		selectedCreator:  -1,
+		selectedGallery:  -1,
+		galleryKind:      "art",
+		gallerySort:      "new",
 		editorLastX:      -1,
 		editorLastY:      -1,
 	}

@@ -23,6 +23,7 @@ const (
 	communityPackBuild
 	communityCreators
 	communityCreatorProfile
+	communityGalleryPack
 )
 
 func loadCommunityLibrary() community.Library {
@@ -239,6 +240,51 @@ func (g *Game) loadCommunityCatalog(raw string) error {
 	return nil
 }
 
+func (g *Game) loadCommunityGallery(raw string) error {
+	var items []community.GalleryItem
+	if err := json.Unmarshal([]byte(raw), &items); err != nil {
+		return err
+	}
+	for i := range items {
+		if items[i].Puzzle != nil {
+			if err := items[i].Puzzle.ParseSolution(); err != nil {
+				return err
+			}
+		}
+		for j := range items[i].Levels {
+			if items[i].Levels[j].Puzzle != nil {
+				if err := items[i].Levels[j].Puzzle.ParseSolution(); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	g.communityGallery = items
+	return nil
+}
+
+func (g *Game) playGalleryLevel(index int) {
+	if index < 0 || index >= len(g.communityGallery) || g.communityGallery[index].Puzzle == nil {
+		return
+	}
+	g.activeCommunityPack = ""
+	g.communityPlayReturn = communityBrowse
+	g.loadCommunityPuzzle(g.communityGallery[index].Puzzle)
+}
+
+func (g *Game) playGalleryPackLevel(index int) {
+	if g.selectedGallery < 0 || g.selectedGallery >= len(g.communityGallery) {
+		return
+	}
+	levels := g.communityGallery[g.selectedGallery].Levels
+	if index < 0 || index >= len(levels) || levels[index].Puzzle == nil {
+		return
+	}
+	g.activeCommunityPack = ""
+	g.communityPlayReturn = communityGalleryPack
+	g.loadCommunityPuzzle(levels[index].Puzzle)
+}
+
 func (g *Game) loadCommunityCreators(raw string) error {
 	var creators []community.CreatorProfile
 	if err := json.Unmarshal([]byte(raw), &creators); err != nil {
@@ -252,6 +298,20 @@ func (g *Game) loadCommunityCreators(raw string) error {
 			if creators[i].Levels[j].Puzzle != nil {
 				if err := creators[i].Levels[j].Puzzle.ParseSolution(); err != nil {
 					return err
+				}
+			}
+		}
+		for j := range creators[i].Featured {
+			if creators[i].Featured[j].Puzzle != nil {
+				if err := creators[i].Featured[j].Puzzle.ParseSolution(); err != nil {
+					return err
+				}
+			}
+			for k := range creators[i].Featured[j].Levels {
+				if creators[i].Featured[j].Levels[k].Puzzle != nil {
+					if err := creators[i].Featured[j].Levels[k].Puzzle.ParseSolution(); err != nil {
+						return err
+					}
 				}
 			}
 		}

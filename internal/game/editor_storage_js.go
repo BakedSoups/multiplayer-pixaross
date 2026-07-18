@@ -224,6 +224,45 @@ func syncCommunityProfile(raw string) {
 	}
 }
 
+func requestCommunityGallery(kind, sort string) bool {
+	fn := js.Global().Get("requestCommunityGallery")
+	if fn.IsUndefined() || fn.IsNull() {
+		return false
+	}
+	fn.Invoke(kind, sort)
+	return true
+}
+
+func takeCommunityGallery() string {
+	fn := js.Global().Get("takeCommunityGallery")
+	if fn.IsUndefined() || fn.IsNull() {
+		return ""
+	}
+	value := fn.Invoke()
+	if value.IsUndefined() || value.IsNull() {
+		return ""
+	}
+	return value.String()
+}
+
+func toggleCommunityLike(kind, id string) bool {
+	fn := js.Global().Get("toggleCommunityLike")
+	if fn.IsUndefined() || fn.IsNull() {
+		return false
+	}
+	fn.Invoke(kind, id)
+	return true
+}
+
+func promoteCommunityItem(kind, id string) bool {
+	fn := js.Global().Get("promoteCommunityItem")
+	if fn.IsUndefined() || fn.IsNull() {
+		return false
+	}
+	fn.Invoke(kind, id)
+	return true
+}
+
 func saveEditorPack(raw string) bool {
 	storage := js.Global().Get("localStorage")
 	if storage.IsUndefined() || storage.IsNull() {

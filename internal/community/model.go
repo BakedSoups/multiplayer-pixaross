@@ -61,7 +61,24 @@ type CreatorProfile struct {
 	ID           string           `json:"id"`
 	DisplayName  string           `json:"displayName"`
 	AvatarPuzzle *nonogram.Puzzle `json:"avatarPuzzle,omitempty"`
+	Featured     []GalleryItem    `json:"featured,omitempty"`
 	Levels       []LevelVersion   `json:"levels"`
+}
+
+type GalleryItem struct {
+	Kind        string           `json:"kind"`
+	ID          string           `json:"id"`
+	OwnerID     string           `json:"ownerId"`
+	CreatorName string           `json:"creatorName"`
+	Title       string           `json:"title"`
+	Description string           `json:"description,omitempty"`
+	Likes       int              `json:"likes"`
+	Liked       bool             `json:"liked"`
+	Owned       bool             `json:"owned"`
+	Promoted    bool             `json:"promoted"`
+	Puzzle      *nonogram.Puzzle `json:"puzzle,omitempty"`
+	Levels      []LevelVersion   `json:"levels,omitempty"`
+	PublishedAt string           `json:"publishedAt"`
 }
 
 type LevelVersion struct {

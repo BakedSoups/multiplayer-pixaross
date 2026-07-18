@@ -178,6 +178,11 @@ func (g *Game) updateMainMenuInput() {
 }
 
 func (g *Game) updateCommunityInput() {
+	if raw := takeCommunityGallery(); raw != "" {
+		if err := g.loadCommunityGallery(raw); err != nil {
+			g.showCommunityNotice("could not load gallery")
+		}
+	}
 	if raw := takeCommunityCreators(); raw != "" {
 		if err := g.loadCommunityCreators(raw); err != nil {
 			g.showCommunityNotice("could not load creators")
@@ -245,7 +250,7 @@ func (g *Game) updateCommunityInput() {
 		case communityLevelsButton().Contains(x, y):
 			g.communityView = communityBrowse
 			g.communityPage = 0
-			requestCommunityCatalog("levels")
+			requestCommunityGallery(g.galleryKind, g.gallerySort)
 		case communityPacksButton().Contains(x, y):
 			g.communityView = communityPacks
 		case communityCreateButton().Contains(x, y):
@@ -289,10 +294,70 @@ func (g *Game) updateCommunityInput() {
 			g.communityPage++
 		}
 	case communityBrowse:
+		switch {
+		case communityGalleryArtButton().Contains(x, y):
+			g.galleryKind = "art"
+			g.communityPage = 0
+			requestCommunityGallery(g.galleryKind, g.gallerySort)
+			return
+		case communityGalleryPacksButton().Contains(x, y):
+			g.galleryKind = "pack"
+			g.communityPage = 0
+			requestCommunityGallery(g.galleryKind, g.gallerySort)
+			return
+		case communityGalleryNewButton().Contains(x, y):
+			g.gallerySort = "new"
+			g.communityPage = 0
+			requestCommunityGallery(g.galleryKind, g.gallerySort)
+			return
+		case communityGalleryTopButton().Contains(x, y):
+			g.gallerySort = "top"
+			g.communityPage = 0
+			requestCommunityGallery(g.galleryKind, g.gallerySort)
+			return
+		}
+		start := g.communityPage * communityCatalogPerPage
 		for slot := 0; slot < communityCatalogPerPage; slot++ {
-			if communityCatalogPlayButton(slot).Contains(x, y) {
-				g.playCommunityVersion(g.communityPage*communityCatalogPerPage + slot)
+			index := start + slot
+			if index >= len(g.communityGallery) {
+				continue
+			}
+			item := g.communityGallery[index]
+			if communityGalleryOpenButton(slot).Contains(x, y) {
+				if item.Kind == "pack" {
+					g.selectedGallery = index
+					g.communityView = communityGalleryPack
+				} else {
+					g.playGalleryLevel(index)
+				}
 				return
+			}
+			if communityGalleryLikeButton(slot).Contains(x, y) {
+				if !communitySignedIn() {
+					g.communityView = communitySignIn
+				} else {
+					toggleCommunityLike(item.Kind, item.ID)
+				}
+				return
+			}
+			if item.Owned && communityGalleryPromoteButton(slot).Contains(x, y) {
+				promoteCommunityItem(item.Kind, item.ID)
+				return
+			}
+		}
+		if communityPrevButton().Contains(x, y) && g.communityPage > 0 {
+			g.communityPage--
+		}
+		if communityNextButton().Contains(x, y) && (g.communityPage+1)*communityCatalogPerPage < len(g.communityGallery) {
+			g.communityPage++
+		}
+	case communityGalleryPack:
+		if g.selectedGallery >= 0 && g.selectedGallery < len(g.communityGallery) {
+			for slot := 0; slot < 6 && slot < len(g.communityGallery[g.selectedGallery].Levels); slot++ {
+				if communityGalleryPackLevelButton(slot).Contains(x, y) {
+					g.playGalleryPackLevel(slot)
+					return
+				}
 			}
 		}
 	case communityPacks:
@@ -363,9 +428,13 @@ func (g *Game) updateCommunityInput() {
 	case communityCreatorProfile:
 		if g.selectedCreator >= 0 && g.selectedCreator < len(g.communityCreators) {
 			levels := g.communityCreators[g.selectedCreator].Levels
-			start := g.communityPage * 6
-			for slot := 0; slot < 6 && start+slot < len(levels); slot++ {
-				if communityCreatorLevelButton(slot).Contains(x, y) {
+			contentY := float64(310)
+			if len(g.communityCreators[g.selectedCreator].Featured) > 0 {
+				contentY = 410
+			}
+			start := g.communityPage * 4
+			for slot := 0; slot < 4 && start+slot < len(levels); slot++ {
+				if communityCreatorLevelButtonAt(slot, contentY).Contains(x, y) {
 					g.playCreatorLevel(start + slot)
 					return
 				}
@@ -373,7 +442,7 @@ func (g *Game) updateCommunityInput() {
 			if communityPrevButton().Contains(x, y) && g.communityPage > 0 {
 				g.communityPage--
 			}
-			if communityNextButton().Contains(x, y) && (g.communityPage+1)*6 < len(levels) {
+			if communityNextButton().Contains(x, y) && (g.communityPage+1)*4 < len(levels) {
 				g.communityPage++
 			}
 		}
@@ -392,6 +461,10 @@ func (g *Game) submitCommunitySignIn() {
 }
 
 func (g *Game) communityBack() {
+	if g.communityView == communityGalleryPack {
+		g.communityView = communityBrowse
+		return
+	}
 	if g.communityView == communityCreatorProfile {
 		g.communityView = communityCreators
 		return

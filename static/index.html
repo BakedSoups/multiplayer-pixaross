@@ -110,6 +110,7 @@
 	window.__pendingCommunityCatalog = "";
 	window.__pendingCommunityCloudDrafts = "";
 	window.__pendingCommunityCreators = "";
+	window.__pendingCommunityGallery = "";
 	const communitySessionKey = "pixaross.community.session";
 	const communityConfig = () => ({
 	  url: String(window.SUPABASE_URL || "").replace(/\/$/, ""),
@@ -329,6 +330,64 @@
 	    });
 	  } catch (_) {
 	    // The local badge remains available while offline.
+	  }
+	};
+	window.takeCommunityGallery = () => {
+	  const value = window.__pendingCommunityGallery || "";
+	  window.__pendingCommunityGallery = "";
+	  return value;
+	};
+	window.requestCommunityGallery = async (kind, sort) => {
+	  window.__communityGalleryKind = kind;
+	  window.__communityGallerySort = sort;
+	  const { url, key } = communityConfig();
+	  if (!url || !key) return setCommunityResult("community cloud is not configured yet");
+	  try {
+	    const response = await fetch(`${url}/rest/v1/rpc/browse_gallery`, {
+	      method: "POST", headers: communityHeaders(readCommunitySession()?.access_token),
+	      body: JSON.stringify({ p_kind: kind, p_sort: sort })
+	    });
+	    const body = await response.json();
+	    if (!response.ok) {
+	      const missingSchema = /browse_gallery|schema cache|function/i.test(body.message || "");
+	      throw new Error(missingSchema ? "Gallery needs database migration 003" : (body.message || "Could not load gallery"));
+	    }
+	    window.__pendingCommunityGallery = JSON.stringify(body || []);
+	  } catch (error) {
+	    setCommunityResult(error.message || "could not load gallery");
+	  }
+	};
+	window.toggleCommunityLike = async (kind, id) => {
+	  const { url } = communityConfig();
+	  const session = readCommunitySession();
+	  if (!session?.access_token) return setCommunityResult("sign in to like published work");
+	  try {
+	    const response = await fetch(`${url}/rest/v1/rpc/toggle_gallery_like`, {
+	      method: "POST", headers: communityHeaders(session.access_token),
+	      body: JSON.stringify({ p_kind: kind, p_content_id: id })
+	    });
+	    const body = await response.json();
+	    if (!response.ok) throw new Error(body.message || "Could not update like");
+	    window.requestCommunityGallery(kind, window.__communityGallerySort || "new");
+	  } catch (error) {
+	    setCommunityResult(error.message || "could not update like");
+	  }
+	};
+	window.promoteCommunityItem = async (kind, id) => {
+	  const { url } = communityConfig();
+	  const session = readCommunitySession();
+	  if (!session?.access_token) return setCommunityResult("sign in to promote work");
+	  try {
+	    const response = await fetch(`${url}/rest/v1/rpc/set_profile_promotion`, {
+	      method: "POST", headers: communityHeaders(session.access_token),
+	      body: JSON.stringify({ p_kind: kind, p_content_id: id })
+	    });
+	    const body = await response.json();
+	    if (!response.ok) throw new Error(body.message || "Could not promote item");
+	    setCommunityResult("profile promotion updated");
+	    window.requestCommunityGallery(kind, window.__communityGallerySort || "new");
+	  } catch (error) {
+	    setCommunityResult(error.message || "could not promote item");
 	  }
 	};
     window.takeEditorImageImport = () => {

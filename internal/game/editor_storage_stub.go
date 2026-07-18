@@ -46,6 +46,14 @@ func takeCommunityCreators() string { return "" }
 
 func syncCommunityProfile(string) {}
 
+func requestCommunityGallery(string, string) bool { return false }
+
+func takeCommunityGallery() string { return "" }
+
+func toggleCommunityLike(string, string) bool { return false }
+
+func promoteCommunityItem(string, string) bool { return false }
+
 func saveEditorPack(string) bool {
 	return false
 }
