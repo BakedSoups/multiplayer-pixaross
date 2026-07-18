@@ -19,6 +19,8 @@ const (
 	communityPacks
 	communityCreate
 	communityMyArt
+	communitySignIn
+	communityPackBuild
 )
 
 func loadCommunityLibrary() community.Library {
@@ -205,6 +207,11 @@ func (g *Game) publishCommunityDraft(index int) {
 		g.showCommunityNotice(err.Error())
 		return
 	}
+	if !communitySignedIn() {
+		g.communityView = communitySignIn
+		g.showCommunityNotice("sign in to publish")
+		return
+	}
 	raw, err := json.Marshal(draft)
 	if err != nil || !requestCommunityPublish(string(raw)) {
 		g.showCommunityNotice("publishing is available in the web build")
@@ -266,11 +273,12 @@ func pixelsFromRaw(raw [][]string) [][]assets.PixelCell {
 }
 
 func (g *Game) createLocalPack() {
-	items := make([]community.PackItem, 0, len(g.communityLibrary.Drafts))
+	items := make([]community.PackItem, 0, len(g.packSelection))
 	for _, draft := range g.communityLibrary.Drafts {
-		if draft.Playtested {
-			items = append(items, community.PackItem{LevelID: draft.ID, Position: len(items)})
+		if !g.packSelection[draft.ID] {
+			continue
 		}
+		items = append(items, community.PackItem{LevelID: draft.ID, Position: len(items)})
 		if len(items) == 20 {
 			break
 		}
@@ -285,12 +293,36 @@ func (g *Game) createLocalPack() {
 		UpdatedAt:  time.Now().UTC().Format(time.RFC3339),
 	}
 	if err := pack.Validate(); err != nil {
-		g.showCommunityNotice("playtest at least one level first")
+		g.showCommunityNotice("create at least one level first")
 		return
 	}
 	g.communityLibrary.Packs = append([]community.Pack{pack}, g.communityLibrary.Packs...)
 	g.saveCommunityLibrary()
+	g.packSelection = nil
+	g.communityView = communityPacks
 	g.showCommunityNotice("pack created")
+}
+
+func (g *Game) openPackBuilder() {
+	g.packSelection = make(map[string]bool)
+	g.communityPage = 0
+	g.communityView = communityPackBuild
+}
+
+func (g *Game) togglePackDraft(index int) {
+	if index < 0 || index >= len(g.communityLibrary.Drafts) {
+		return
+	}
+	id := g.communityLibrary.Drafts[index].ID
+	if !g.packSelection[id] && len(g.packSelection) >= 20 {
+		g.showCommunityNotice("packs can contain up to 20 levels")
+		return
+	}
+	if g.packSelection[id] {
+		delete(g.packSelection, id)
+	} else {
+		g.packSelection[id] = true
+	}
 }
 
 func (g *Game) publishLocalPack(index int) {
@@ -300,6 +332,11 @@ func (g *Game) publishLocalPack(index int) {
 	pack := g.communityLibrary.Packs[index]
 	if err := pack.Validate(); err != nil {
 		g.showCommunityNotice(err.Error())
+		return
+	}
+	if !communitySignedIn() {
+		g.communityView = communitySignIn
+		g.showCommunityNotice("sign in to publish")
 		return
 	}
 	raw, err := json.Marshal(pack)

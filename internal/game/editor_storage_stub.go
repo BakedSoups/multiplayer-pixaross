@@ -8,6 +8,8 @@ func loadCommunityProfile() string { return "" }
 
 func communityAccountLabel() string { return "Sign in" }
 
+func communitySignedIn() bool { return false }
+
 func saveCommunityData(string) bool { return false }
 
 func loadCommunityData() string { return "" }
@@ -16,7 +18,9 @@ func requestCommunityImport() bool { return false }
 
 func takeCommunityImport() string { return "" }
 
-func requestCommunitySignIn() bool { return false }
+func requestCommunitySignIn(string) bool { return false }
+
+func requestCommunitySignOut() bool { return false }
 
 func requestCommunityPublish(string) bool { return false }
 

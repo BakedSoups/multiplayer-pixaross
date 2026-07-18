@@ -17,10 +17,6 @@ func TestDraftPublishValidation(t *testing.T) {
 		RevealRaw:   pixels(8, "#975347FF"),
 	}
 	draft := NewDraft("level-1", puzzle)
-	if err := draft.ValidateForPublish(); err == nil {
-		t.Fatal("publish validation succeeded without a playtest")
-	}
-	draft.Playtested = true
 	if err := draft.ValidateForPublish(); err != nil {
 		t.Fatal(err)
 	}

@@ -2,6 +2,7 @@ package game
 
 import (
 	"image"
+	"strings"
 	"time"
 
 	"github.com/alex/nongrampictures/internal/nonogram"
@@ -195,6 +196,20 @@ func (g *Game) updateCommunityInput() {
 			g.showCommunityNotice("import failed: " + err.Error())
 		}
 	}
+	if g.communityView == communitySignIn && !communitySignedIn() {
+		for _, char := range ebiten.AppendInputChars(nil) {
+			if len(g.communityEmail) < 80 && (char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' || char >= '0' && char <= '9' || strings.ContainsRune("@._+-", char)) {
+				g.communityEmail += string(char)
+			}
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) && len(g.communityEmail) > 0 {
+			g.communityEmail = g.communityEmail[:len(g.communityEmail)-1]
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+			g.submitCommunitySignIn()
+			return
+		}
+	}
 	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 		g.communityBack()
 		return
@@ -207,14 +222,16 @@ func (g *Game) updateCommunityInput() {
 		g.communityBack()
 		return
 	}
-	if communityProfileBadgeButton().Contains(x, y) {
-		g.openProfileEditor()
+	if g.communityView == communityHome && communityProfileBadgeButton().Contains(x, y) {
+		if communitySignedIn() {
+			g.openProfileEditor()
+		} else {
+			g.communityView = communitySignIn
+		}
 		return
 	}
-	if communityAccountButton().Contains(x, y) {
-		if !requestCommunitySignIn() {
-			g.showCommunityNotice("sign in is available in the web build")
-		}
+	if g.communityView == communityHome && communityAccountButton().Contains(x, y) {
+		g.communityView = communitySignIn
 		return
 	}
 	switch g.communityView {
@@ -242,11 +259,6 @@ func (g *Game) updateCommunityInput() {
 			if !requestCommunityImport() {
 				g.showCommunityNotice("import is available in the web build")
 			}
-		case communityCreateMyArtButton().Contains(x, y):
-			g.communityView = communityMyArt
-			g.communityPage = 0
-			g.syncLocalDrafts()
-			requestCommunityCloudDrafts()
 		}
 	case communityMyArt:
 		start := g.communityPage * communityDraftsPerPage
@@ -275,7 +287,8 @@ func (g *Game) updateCommunityInput() {
 		}
 	case communityPacks:
 		if communityPackCreateButton().Contains(x, y) {
-			g.createLocalPack()
+			g.openPackBuilder()
+			return
 		}
 		for slot := 0; slot < 4; slot++ {
 			if communityPackPlayButton(slot).Contains(x, y) {
@@ -287,10 +300,52 @@ func (g *Game) updateCommunityInput() {
 				return
 			}
 		}
+	case communityPackBuild:
+		start := g.communityPage * communityPackDraftsPerPage
+		for slot := 0; slot < communityPackDraftsPerPage; slot++ {
+			if communityPackDraftButton(slot).Contains(x, y) {
+				g.togglePackDraft(start + slot)
+				return
+			}
+		}
+		if communityPackDoneButton().Contains(x, y) {
+			g.createLocalPack()
+			return
+		}
+		if communityPrevButton().Contains(x, y) && g.communityPage > 0 {
+			g.communityPage--
+		}
+		if communityNextButton().Contains(x, y) && (g.communityPage+1)*communityPackDraftsPerPage < len(g.communityLibrary.Drafts) {
+			g.communityPage++
+		}
+	case communitySignIn:
+		if communitySignedIn() {
+			if communitySignOutButton().Contains(x, y) {
+				requestCommunitySignOut()
+				g.communityView = communityHome
+			}
+		} else if communitySendLinkButton().Contains(x, y) {
+			g.submitCommunitySignIn()
+		}
+	}
+}
+
+func (g *Game) submitCommunitySignIn() {
+	email := strings.TrimSpace(g.communityEmail)
+	if !strings.Contains(email, "@") || !strings.Contains(email, ".") {
+		g.showCommunityNotice("enter a valid email address")
+		return
+	}
+	if !requestCommunitySignIn(email) {
+		g.showCommunityNotice("sign in is available in the web build")
 	}
 }
 
 func (g *Game) communityBack() {
+	if g.communityView == communityPackBuild {
+		g.communityView = communityPacks
+		return
+	}
 	if g.communityView == communityHome {
 		g.mode = screenMainMenu
 		return

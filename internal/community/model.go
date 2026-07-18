@@ -178,9 +178,6 @@ func (d *LevelDraft) ValidateForPublish() error {
 	if len(d.Description) > 500 {
 		return errors.New("description is too long")
 	}
-	if !d.Playtested {
-		return errors.New("complete a playtest before publishing")
-	}
 	filled := 0
 	for _, row := range d.Puzzle.Solution {
 		for _, cell := range row {

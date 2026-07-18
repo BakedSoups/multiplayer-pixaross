@@ -49,7 +49,7 @@ This writes self-contained `puzzle.json` files under `assets/puzzles/` and `inte
 
 ## Community Editor
 
-Open **Community > Create**. Guest drawings and packs are saved in browser local storage, and **My Art** keeps multiple editable drafts. A level must be completed through **Play** before it can be published. Publishing asks for title, description, tags, and whether the creator wants the level inspected for possible inclusion in the main game. Main-game submission is optional, requires a rights confirmation, and does not guarantee approval.
+Open **Community > Create**. Guest drawings and packs are saved in browser local storage, and **My Art** keeps multiple editable drafts. Publishing asks for title, description, tags, and whether the creator wants the level inspected for possible inclusion in the main game. Main-game submission is optional, requires a rights confirmation, and does not guarantee approval.
 
 ### Import From Aseprite
 
@@ -71,7 +71,7 @@ For a regular PNG without JSON, arrange any number of pairs horizontally (`Befor
 The app remains fully usable for guests without a backend. To enable accounts and publishing:
 
 1. Create a Supabase project and apply `supabase/migrations/001_community.sql`.
-2. Set `SUPABASE_URL` and `SUPABASE_ANON_KEY` in your shell or in a local `.env` file. You can copy `.env.example` as a starting point. Do not use a service-role key.
+2. Set `SUPABASE_URL` and `SUPABASE_ANON_KEY` in your shell or in a local `.env` file. `SUPABASE_URL` should be the project URL (`https://...supabase.co`); copied Data API URLs ending in `/rest/v1` are normalized by the config script. You can copy `.env.example` as a starting point. Do not use a service-role key.
 3. Generate the ignored browser config:
 
 ```sh

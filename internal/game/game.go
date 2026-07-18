@@ -83,6 +83,8 @@ type Game struct {
 	communityPage        int
 	communityCatalog     []community.LevelVersion
 	activeCommunityPack  string
+	packSelection        map[string]bool
+	communityEmail       string
 	communityNotice      string
 	communityNoticeUntil time.Time
 }

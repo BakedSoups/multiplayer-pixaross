@@ -43,6 +43,11 @@ func communityAccountLabel() string {
 	return value.String()
 }
 
+func communitySignedIn() bool {
+	fn := js.Global().Get("communitySignedIn")
+	return !fn.IsUndefined() && !fn.IsNull() && fn.Invoke().Bool()
+}
+
 func saveCommunityData(raw string) bool {
 	storage := js.Global().Get("localStorage")
 	if storage.IsUndefined() || storage.IsNull() {
@@ -85,8 +90,17 @@ func takeCommunityImport() string {
 	return value.String()
 }
 
-func requestCommunitySignIn() bool {
+func requestCommunitySignIn(email string) bool {
 	fn := js.Global().Get("requestCommunitySignIn")
+	if fn.IsUndefined() || fn.IsNull() {
+		return false
+	}
+	fn.Invoke(email)
+	return true
+}
+
+func requestCommunitySignOut() bool {
+	fn := js.Global().Get("requestCommunitySignOut")
 	if fn.IsUndefined() || fn.IsNull() {
 		return false
 	}

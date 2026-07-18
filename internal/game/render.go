@@ -330,10 +330,11 @@ func (g *Game) drawReveal(screen *ebiten.Image) {
 	drawRounded(screen, rect{x: artRect.x - 6, y: artRect.y - 6, w: artRect.w + 12, h: artRect.h + 12}, 6, colWhite)
 	whiteFade := easeInOut(clamp((elapsed-0.55)/1.45, 0, 1))
 	drawPixelMatrixTinted(screen, g.skeletonPixels, displayRect, 1, color.RGBA{255, 255, 255, 255}, whiteFade)
-	colorFade := easeInOut(clamp((elapsed-2.05)/1.15, 0, 1))
-	if colorFade > 0 {
-		drawPixelMatrix(screen, g.revealPixels, displayRect, colorFade)
-		drawShineSweep(screen, displayRect, clamp((elapsed-2.05)/2.4, 0, 1), colorFade)
+	colorSpread := clamp((elapsed-1.45)/2.25, 0, 1)
+	if colorSpread > 0 {
+		drawPixelMatrixSpread(screen, g.revealPixels, g.skeletonPixels, displayRect, colorSpread)
+		shineProgress := clamp((colorSpread-0.62)/0.38, 0, 1)
+		drawShineSweep(screen, displayRect, shineProgress, shineProgress)
 	}
 
 	for _, s := range g.sparkles {
@@ -687,6 +688,64 @@ func drawPixelMatrix(dst *ebiten.Image, matrix [][]assets.PixelCell, r rect, alp
 	startY := math.Floor(r.y + (r.h-totalH)/2)
 	img := imageFromMatrix(matrix, alpha, color.RGBA{}, 0)
 	drawPixelImage(dst, img, startX, startY, cellSize)
+}
+
+func drawPixelMatrixSpread(dst *ebiten.Image, reveal, seeds [][]assets.PixelCell, r rect, progress float64) {
+	if len(reveal) == 0 || len(reveal[0]) == 0 || progress <= 0 {
+		return
+	}
+	rows := len(reveal)
+	cols := len(reveal[0])
+	distances := make([][]int, rows)
+	maxDistance := 0
+	seedFound := false
+	for y := 0; y < rows; y++ {
+		distances[y] = make([]int, cols)
+		for x := 0; x < cols; x++ {
+			best := rows + cols
+			for seedY, row := range seeds {
+				for seedX, seed := range row {
+					if !seed.Visible {
+						continue
+					}
+					seedFound = true
+					distance := absInt(x-seedX) + absInt(y-seedY)
+					if distance < best {
+						best = distance
+					}
+				}
+			}
+			if !seedFound {
+				best = absInt(x-cols/2) + absInt(y-rows/2)
+			}
+			distances[y][x] = best
+			if reveal[y][x].Visible && best > maxDistance {
+				maxDistance = best
+			}
+		}
+	}
+
+	wave := easeInOut(progress) * float64(maxDistance+2)
+	img := image.NewRGBA(image.Rect(0, 0, cols, rows))
+	for y, row := range reveal {
+		for x, cell := range row {
+			if !cell.Visible {
+				continue
+			}
+			stagger := float64((x*7+y*11)%5) * 0.12
+			alpha := clamp(wave-float64(distances[y][x])-stagger, 0, 1)
+			if alpha > 0 {
+				img.SetRGBA(x, y, alphaColor(cell.Color, alpha))
+			}
+		}
+	}
+	cellSize := math.Floor(math.Min(r.w/float64(cols), r.h/float64(rows)))
+	if cellSize < 1 {
+		cellSize = 1
+	}
+	startX := math.Floor(r.x + (r.w-cellSize*float64(cols))/2)
+	startY := math.Floor(r.y + (r.h-cellSize*float64(rows))/2)
+	drawPixelImage(dst, ebiten.NewImageFromImage(img), startX, startY, cellSize)
 }
 
 func drawPixelMatrixTinted(dst *ebiten.Image, matrix [][]assets.PixelCell, r rect, alpha float64, tint color.RGBA, tintAmount float64) {

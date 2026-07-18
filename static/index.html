@@ -138,18 +138,9 @@
 	  history.replaceState(null, "", location.pathname + location.search);
 	  setCommunityResult("signed in");
 	}
-	window.requestCommunitySignIn = async () => {
+	window.requestCommunitySignIn = async (email) => {
 	  const { url, key } = communityConfig();
 	  if (!url || !key) return setCommunityResult("community cloud is not configured yet");
-	  const session = readCommunitySession();
-	  if (session && session.access_token) {
-	    if (confirm("You are signed in. Sign out?")) {
-	      localStorage.removeItem(communitySessionKey);
-	      setCommunityResult("signed out");
-	    }
-	    return;
-	  }
-	  const email = prompt("Email for a secure sign-in link:", "");
 	  if (!email) return;
 	  try {
 	    const response = await fetch(`${url}/auth/v1/otp`, {
@@ -163,14 +154,18 @@
 	    setCommunityResult(error.message || "sign in failed");
 	  }
 	};
+	window.requestCommunitySignOut = () => {
+	  localStorage.removeItem(communitySessionKey);
+	  setCommunityResult("signed out");
+	};
 	window.communityAccountLabel = () => readCommunitySession()?.access_token ? "Account" : "Sign in";
+	window.communitySignedIn = () => Boolean(readCommunitySession()?.access_token);
 	window.requestCommunityPublish = async (raw) => {
 	  const { url, key } = communityConfig();
 	  if (!url || !key) return setCommunityResult("community cloud is not configured yet");
 	  const session = readCommunitySession();
 	  if (!session || !session.access_token) {
 	    setCommunityResult("sign in before publishing");
-	    window.requestCommunitySignIn();
 	    return;
 	  }
 	  try {
@@ -241,7 +236,10 @@
 	      headers: communityHeaders(readCommunitySession()?.access_token)
 	    });
 	    const rows = await response.json();
-	    if (!response.ok) throw new Error(rows.message || "Catalog request failed");
+	    if (!response.ok) {
+	      const missingSchema = /level_versions|schema cache|relation/i.test(rows.message || "");
+	      throw new Error(missingSchema ? "Community database setup is not finished yet" : (rows.message || "Catalog request failed"));
+	    }
 	    window.__pendingCommunityCatalog = JSON.stringify(rows.map((row) => ({
 	      id: row.id,
 	      levelId: row.level_id,
