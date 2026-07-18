@@ -143,10 +143,11 @@
 	  if (!url || !key) return setCommunityResult("community cloud is not configured yet");
 	  if (!email) return;
 	  try {
-	    const response = await fetch(`${url}/auth/v1/otp`, {
+	    const redirectTo = location.href.split("#")[0];
+	    const response = await fetch(`${url}/auth/v1/otp?redirect_to=${encodeURIComponent(redirectTo)}`, {
 	      method: "POST",
 	      headers: communityHeaders(),
-	      body: JSON.stringify({ email, create_user: true, options: { email_redirect_to: location.href.split("#")[0] } })
+	      body: JSON.stringify({ email, create_user: true })
 	    });
 	    if (!response.ok) throw new Error((await response.json()).msg || "Sign-in request failed");
 	    setCommunityResult("check your email for the sign-in link");
