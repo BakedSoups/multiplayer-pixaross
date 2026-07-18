@@ -19,14 +19,14 @@ set display_name = left(coalesce(nullif(user_row.raw_user_meta_data->>'full_name
 from auth.users user_row
 where profile.id = user_row.id and profile.display_name = 'Creator';
 
-create or replace function public.save_creator_profile(p_avatar_puzzle jsonb)
+create or replace function public.save_creator_profile(p_avatar_puzzle jsonb, p_bio text default '')
 returns void language plpgsql security definer set search_path = public as $$
 begin
   if auth.uid() is null then
     raise exception 'Sign in before saving a profile';
   end if;
   update public.profiles
-  set avatar_puzzle = p_avatar_puzzle
+  set avatar_puzzle = p_avatar_puzzle, bio = left(coalesce(p_bio, ''), 120)
   where id = auth.uid();
 end;
 $$;
@@ -38,6 +38,7 @@ returns jsonb language sql stable security definer set search_path = public as $
     select jsonb_build_object(
       'id', profile.id,
       'displayName', profile.display_name,
+      'bio', profile.bio,
       'avatarPuzzle', profile.avatar_puzzle,
       'levels', coalesce((
         select jsonb_agg(jsonb_build_object(
@@ -70,5 +71,5 @@ returns jsonb language sql stable security definer set search_path = public as $
   ) creators;
 $$;
 
-grant execute on function public.save_creator_profile(jsonb) to authenticated;
+grant execute on function public.save_creator_profile(jsonb, text) to authenticated;
 grant execute on function public.browse_creators() to anon, authenticated;

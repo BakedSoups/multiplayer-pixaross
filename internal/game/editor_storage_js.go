@@ -8,6 +8,7 @@ const (
 	editorPackKey       = "pixaross.editor.pack"
 	communityLibraryKey = "pixaross.community.library"
 	communityProfileKey = "pixaross.community.profile"
+	communityBioKey     = "pixaross.community.bio"
 )
 
 func saveCommunityProfile(raw string) bool {
@@ -17,6 +18,27 @@ func saveCommunityProfile(raw string) bool {
 	}
 	storage.Call("setItem", communityProfileKey, raw)
 	return true
+}
+
+func saveCommunityBio(bio string) bool {
+	storage := js.Global().Get("localStorage")
+	if storage.IsUndefined() || storage.IsNull() {
+		return false
+	}
+	storage.Call("setItem", communityBioKey, bio)
+	return true
+}
+
+func loadCommunityBio() string {
+	storage := js.Global().Get("localStorage")
+	if storage.IsUndefined() || storage.IsNull() {
+		return ""
+	}
+	value := storage.Call("getItem", communityBioKey)
+	if value.IsUndefined() || value.IsNull() {
+		return ""
+	}
+	return value.String()
 }
 
 func loadCommunityProfile() string {
@@ -241,10 +263,17 @@ func takeCommunityCreators() string {
 	return value.String()
 }
 
-func syncCommunityProfile(raw string) {
+func syncCommunityProfile(raw, bio string) {
 	fn := js.Global().Get("syncCommunityProfile")
 	if !fn.IsUndefined() && !fn.IsNull() {
-		fn.Invoke(raw)
+		fn.Invoke(raw, bio)
+	}
+}
+
+func deleteCommunityCloudDraft(id string) {
+	fn := js.Global().Get("deleteCommunityCloudDraft")
+	if !fn.IsUndefined() && !fn.IsNull() {
+		fn.Invoke(id)
 	}
 }
 

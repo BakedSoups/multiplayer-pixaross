@@ -8,6 +8,7 @@ create type public.report_status as enum ('open', 'reviewed', 'dismissed', 'acti
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text not null default 'Creator' check (char_length(display_name) between 1 and 40),
+  bio text not null default '' check (char_length(bio) <= 120),
   role text not null default 'creator' check (role in ('creator', 'moderator', 'admin')),
   created_at timestamptz not null default now()
 );

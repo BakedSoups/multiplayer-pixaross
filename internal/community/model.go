@@ -60,6 +60,7 @@ type CommunityLevelStats struct {
 type CreatorProfile struct {
 	ID           string           `json:"id"`
 	DisplayName  string           `json:"displayName"`
+	Bio          string           `json:"bio,omitempty"`
 	AvatarPuzzle *nonogram.Puzzle `json:"avatarPuzzle,omitempty"`
 	Featured     []GalleryItem    `json:"featured,omitempty"`
 	Levels       []LevelVersion   `json:"levels"`

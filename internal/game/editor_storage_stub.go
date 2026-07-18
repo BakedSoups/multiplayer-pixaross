@@ -6,6 +6,10 @@ func saveCommunityProfile(string) bool { return false }
 
 func loadCommunityProfile() string { return "" }
 
+func saveCommunityBio(string) bool { return false }
+
+func loadCommunityBio() string { return "" }
+
 func communityAccountLabel() string { return "Sign in" }
 
 func communitySignedIn() bool { return false }
@@ -40,6 +44,8 @@ func takeCommunityCatalog() string { return "" }
 
 func syncCommunityDraft(string) {}
 
+func deleteCommunityCloudDraft(string) {}
+
 func requestCommunityCloudDrafts() bool { return false }
 
 func takeCommunityCloudDrafts() string { return "" }
@@ -48,7 +54,7 @@ func requestCommunityCreators() bool { return false }
 
 func takeCommunityCreators() string { return "" }
 
-func syncCommunityProfile(string) {}
+func syncCommunityProfile(string, string) {}
 
 func requestCommunityGallery(string, string) bool { return false }
 

@@ -132,7 +132,7 @@ returns jsonb language sql stable security definer set search_path = public as $
   select coalesce(jsonb_agg(creator order by creator->>'displayName'), '[]'::jsonb)
   from (
     select jsonb_build_object(
-      'id', profile.id, 'displayName', profile.display_name, 'avatarPuzzle', profile.avatar_puzzle,
+      'id', profile.id, 'displayName', profile.display_name, 'bio', profile.bio, 'avatarPuzzle', profile.avatar_puzzle,
       'featured', coalesce((select jsonb_agg(promoted_item.featured) from (
         select jsonb_build_object(
           'kind', 'art', 'id', level.id, 'ownerId', level.owner_id, 'creatorName', profile.display_name,

@@ -315,6 +315,19 @@
 	    // Local save remains authoritative while offline.
 	  }
 	};
+	window.deleteCommunityCloudDraft = async (id) => {
+	  const { url, key } = communityConfig();
+	  const session = await validCommunitySession().catch(() => null);
+	  if (!url || !key || !session?.access_token) return;
+	  try {
+	    const response = await fetch(`${url}/rest/v1/drafts?local_id=eq.${encodeURIComponent(id)}`, {
+	      method: "DELETE", headers: communityHeaders(session.access_token)
+	    });
+	    if (!response.ok) throw new Error("Cloud delete failed");
+	  } catch (_) {
+	    setCommunityResult("deleted locally; cloud delete will retry after sign-in");
+	  }
+	};
 	window.takeCommunityCloudDrafts = () => {
 	  const value = window.__pendingCommunityCloudDrafts || "";
 	  window.__pendingCommunityCloudDrafts = "";
@@ -360,14 +373,14 @@
 	    setCommunityResult(error.message || "could not load creators");
 	  }
 	};
-	window.syncCommunityProfile = async (raw) => {
+	window.syncCommunityProfile = async (raw, bio) => {
 	  const { url, key } = communityConfig();
 	  const session = await validCommunitySession().catch(() => null);
 	  if (!url || !key || !session?.access_token) return;
 	  try {
 	    const response = await fetch(`${url}/rest/v1/rpc/save_creator_profile`, {
 	      method: "POST", headers: communityHeaders(session.access_token),
-	      body: JSON.stringify({ p_avatar_puzzle: JSON.parse(raw) })
+	      body: JSON.stringify({ p_avatar_puzzle: JSON.parse(raw), p_bio: String(bio || "").slice(0, 120) })
 	    });
 	    if (!response.ok) throw new Error((await response.json()).message || "Profile sync failed");
 	    window.requestCommunityCreators?.();

@@ -735,6 +735,32 @@ func (g *Game) communityBack() {
 }
 
 func (g *Game) updateEditorInput() {
+	if g.editingProfile && g.profileBioEditing {
+		for _, char := range ebiten.AppendInputChars(nil) {
+			if char >= 32 && char <= 126 && len(g.profileBioDraft) < 120 {
+				g.profileBioDraft += string(char)
+			}
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) && len(g.profileBioDraft) > 0 {
+			g.profileBioDraft = g.profileBioDraft[:len(g.profileBioDraft)-1]
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+			g.profileBioEditing = false
+			return
+		}
+		x, y, _, justPressed, _ := pointerState()
+		if justPressed {
+			switch {
+			case profileBioSaveButton().Contains(x, y):
+				g.profileBio = strings.TrimSpace(g.profileBioDraft)
+				saveCommunityBio(g.profileBio)
+				g.profileBioEditing = false
+			case profileBioCancelButton().Contains(x, y):
+				g.profileBioEditing = false
+			}
+		}
+		return
+	}
 	if title := takeEditorTitle(); title != "" {
 		g.editor.Title = title
 		_ = g.saveCurrentDraft(false)
@@ -852,6 +878,10 @@ func (g *Game) handleEditorButton(x, y int) bool {
 			return true
 		case profileSaveButton().Contains(x, y):
 			g.closeProfileEditor(true)
+			return true
+		case profileBioButton().Contains(x, y):
+			g.profileBioDraft = g.profileBio
+			g.profileBioEditing = true
 			return true
 		}
 	}

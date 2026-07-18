@@ -90,8 +90,9 @@ func (g *Game) closeProfileEditor(save bool) {
 		g.editor.selectLayer(editorLayerAfter)
 		g.profileArt = g.editor.clone()
 		saveCommunityProfile(g.profileArt.packJSON())
+		saveCommunityBio(g.profileBio)
 		if raw, err := json.Marshal(g.profileArt.puzzle()); err == nil {
-			syncCommunityProfile(string(raw))
+			syncCommunityProfile(string(raw), g.profileBio)
 		}
 	}
 	g.editor = g.profileReturn
@@ -107,7 +108,7 @@ func (g *Game) syncCommunityProfileArt() {
 		return
 	}
 	if raw, err := json.Marshal(g.profileArt.puzzle()); err == nil {
-		syncCommunityProfile(string(raw))
+		syncCommunityProfile(string(raw), g.profileBio)
 	}
 }
 
@@ -346,6 +347,7 @@ func (g *Game) deleteCommunityDraft(index int) {
 	}
 	g.communityLibrary.Drafts = append(g.communityLibrary.Drafts[:index], g.communityLibrary.Drafts[index+1:]...)
 	g.saveCommunityLibrary()
+	deleteCommunityCloudDraft(draft.ID)
 	if g.communityPage > 0 && g.communityPage*communityDraftsPerPage >= len(g.communityLibrary.Drafts) {
 		g.communityPage--
 	}
