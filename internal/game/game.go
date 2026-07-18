@@ -109,6 +109,14 @@ type Game struct {
 	publishRightsConfirmed bool
 	communityImportRaw     string
 	communityImportPack    editorPack
+	newArtTitle            string
+	artSearch              string
+	artSearchActive        bool
+	packSetupID            string
+	packSetupTitle         string
+	packSetupDescription   string
+	packSetupItems         []community.PackItem
+	packSetupField         int
 	communityNotice        string
 	communityNoticeUntil   time.Time
 }
@@ -156,7 +164,7 @@ func New(puzzlePath string) (*Game, error) {
 		communityLibrary: loadCommunityLibrary(),
 		selectedCreator:  -1,
 		selectedGallery:  -1,
-		galleryKind:      "art",
+		galleryKind:      "all",
 		gallerySort:      "new",
 		editorLastX:      -1,
 		editorLastY:      -1,

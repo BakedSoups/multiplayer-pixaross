@@ -28,6 +28,8 @@ const (
 	communityPublished
 	communityPublishSetup
 	communityImportPreview
+	communityNewArtSetup
+	communityPackSetup
 )
 
 func loadCommunityLibrary() community.Library {
@@ -44,15 +46,29 @@ func (g *Game) saveCommunityLibrary() bool {
 	return err == nil && saveCommunityData(string(raw))
 }
 
-func (g *Game) newCommunityDraft(size int) {
+func (g *Game) newCommunityDraft(size int, title string) {
 	g.editor = newEditorState(size)
-	g.editor.Title = "Untitled"
+	g.editor.Title = strings.TrimSpace(title)
 	g.currentDraftID = newLocalID("level")
 	g.editorUndo = nil
 	g.editorSizeOpen = false
 	g.editorOnionSkin = false
 	g.mode = screenEditor
 	_ = g.saveCurrentDraft(false)
+}
+
+func (g *Game) openNewArtSetup() {
+	g.newArtTitle = ""
+	g.communityView = communityNewArtSetup
+}
+
+func (g *Game) startNewCommunityArt() {
+	title := strings.TrimSpace(g.newArtTitle)
+	if title == "" {
+		g.showCommunityNotice("title is required")
+		return
+	}
+	g.newCommunityDraft(10, title)
 }
 
 func (g *Game) openProfileEditor() {
@@ -178,6 +194,17 @@ func (g *Game) syncLocalDrafts() {
 			syncCommunityDraft(string(raw))
 		}
 	}
+}
+
+func (g *Game) filteredCommunityDraftIndexes() []int {
+	query := strings.ToLower(strings.TrimSpace(g.artSearch))
+	indexes := make([]int, 0, len(g.communityLibrary.Drafts))
+	for i, draft := range g.communityLibrary.Drafts {
+		if query == "" || strings.Contains(strings.ToLower(draft.Title), query) {
+			indexes = append(indexes, i)
+		}
+	}
+	return indexes
 }
 
 func (g *Game) importCommunityPack(raw string) error {
@@ -524,7 +551,7 @@ func pixelsFromRaw(raw [][]string) [][]assets.PixelCell {
 	return result
 }
 
-func (g *Game) createLocalPack() {
+func (g *Game) openNewPackSetup() {
 	items := make([]community.PackItem, 0, len(g.packSelection))
 	for _, draft := range g.communityLibrary.Drafts {
 		if !g.packSelection[draft.ID] {
@@ -535,24 +562,17 @@ func (g *Game) createLocalPack() {
 			break
 		}
 	}
-	pack := community.Pack{
-		ID:         newLocalID("pack"),
-		Title:      fmt.Sprintf("My Pack %d", len(g.communityLibrary.Packs)+1),
-		Visibility: community.VisibilityDraft,
-		Status:     community.LevelDraftStatus,
-		Version:    1,
-		Items:      items,
-		UpdatedAt:  time.Now().UTC().Format(time.RFC3339),
-	}
-	if err := pack.Validate(); err != nil {
+	if len(items) == 0 {
 		g.showCommunityNotice("create at least one level first")
 		return
 	}
-	g.communityLibrary.Packs = append([]community.Pack{pack}, g.communityLibrary.Packs...)
-	g.saveCommunityLibrary()
+	g.packSetupID = ""
+	g.packSetupTitle = fmt.Sprintf("My Pack %d", len(g.communityLibrary.Packs)+1)
+	g.packSetupDescription = ""
+	g.packSetupItems = items
+	g.packSetupField = 0
 	g.packSelection = nil
-	g.communityView = communityPacks
-	g.showCommunityNotice("pack created")
+	g.communityView = communityPackSetup
 }
 
 func (g *Game) openPackBuilder() {
@@ -582,8 +602,43 @@ func (g *Game) queueLocalPackPublish(index int) {
 		return
 	}
 	pack := g.communityLibrary.Packs[index]
+	g.packSetupID = pack.ID
+	g.packSetupTitle = pack.Title
+	g.packSetupDescription = pack.Description
+	g.packSetupItems = append([]community.PackItem(nil), pack.Items...)
+	g.packSetupField = 0
+	g.communityView = communityPackSetup
+}
+
+func (g *Game) savePackSetup(publish bool) {
+	title := strings.TrimSpace(g.packSetupTitle)
+	if title == "" {
+		g.showCommunityNotice("pack title is required")
+		return
+	}
+	var pack *community.Pack
+	for i := range g.communityLibrary.Packs {
+		if g.communityLibrary.Packs[i].ID == g.packSetupID {
+			pack = &g.communityLibrary.Packs[i]
+			break
+		}
+	}
+	if pack == nil {
+		created := community.Pack{ID: newLocalID("pack"), Visibility: community.VisibilityDraft, Status: community.LevelDraftStatus, Version: 1, Items: append([]community.PackItem(nil), g.packSetupItems...)}
+		g.communityLibrary.Packs = append([]community.Pack{created}, g.communityLibrary.Packs...)
+		pack = &g.communityLibrary.Packs[0]
+	}
+	pack.Title = title
+	pack.Description = strings.TrimSpace(g.packSetupDescription)
+	pack.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
 	if err := pack.Validate(); err != nil {
 		g.showCommunityNotice(err.Error())
+		return
+	}
+	g.saveCommunityLibrary()
+	if !publish {
+		g.communityView = communityPacks
+		g.showCommunityNotice("pack saved as draft")
 		return
 	}
 	if !communitySignedIn() {
@@ -593,6 +648,7 @@ func (g *Game) queueLocalPackPublish(index int) {
 	}
 	g.pendingPackPublishID = pack.ID
 	g.pendingPackPublishAt = time.Now().Add(100 * time.Millisecond)
+	g.communityView = communityPacks
 	g.showCommunityNotice("publishing " + pack.Title + "...")
 }
 

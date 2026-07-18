@@ -280,6 +280,57 @@ func (g *Game) updateCommunityInput() {
 			}
 		}
 	}
+	if g.communityView == communityNewArtSetup {
+		for _, char := range ebiten.AppendInputChars(nil) {
+			if char >= 32 && char <= 126 && len(g.newArtTitle) < 80 {
+				g.newArtTitle += string(char)
+			}
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) && len(g.newArtTitle) > 0 {
+			g.newArtTitle = g.newArtTitle[:len(g.newArtTitle)-1]
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+			g.startNewCommunityArt()
+			return
+		}
+	}
+	if g.communityView == communityPackSetup {
+		for _, char := range ebiten.AppendInputChars(nil) {
+			if char < 32 || char > 126 {
+				continue
+			}
+			if g.packSetupField == 0 && len(g.packSetupTitle) < 80 {
+				g.packSetupTitle += string(char)
+			}
+			if g.packSetupField == 1 && len(g.packSetupDescription) < 200 {
+				g.packSetupDescription += string(char)
+			}
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
+			if g.packSetupField == 0 && len(g.packSetupTitle) > 0 {
+				g.packSetupTitle = g.packSetupTitle[:len(g.packSetupTitle)-1]
+			}
+			if g.packSetupField == 1 && len(g.packSetupDescription) > 0 {
+				g.packSetupDescription = g.packSetupDescription[:len(g.packSetupDescription)-1]
+			}
+		}
+	}
+	if g.communityView == communityMyArt && g.artSearchActive {
+		changed := false
+		for _, char := range ebiten.AppendInputChars(nil) {
+			if char >= 32 && char <= 126 && len(g.artSearch) < 60 {
+				g.artSearch += string(char)
+				changed = true
+			}
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) && len(g.artSearch) > 0 {
+			g.artSearch = g.artSearch[:len(g.artSearch)-1]
+			changed = true
+		}
+		if changed {
+			g.communityPage = 0
+		}
+	}
 	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 		g.communityBack()
 		return
@@ -326,7 +377,7 @@ func (g *Game) updateCommunityInput() {
 	case communityCreate:
 		switch {
 		case communityNewButton().Contains(x, y):
-			g.newCommunityDraft(10)
+			g.openNewArtSetup()
 		case communityImportButton().Contains(x, y):
 			if !requestCommunityImport() {
 				g.showCommunityNotice("import is available in the web build")
@@ -335,6 +386,11 @@ func (g *Game) updateCommunityInput() {
 			g.communityView = communityImportHelp
 		}
 	case communityMyArt:
+		if communityArtSearchField().Contains(x, y) {
+			g.artSearchActive = true
+			return
+		}
+		g.artSearchActive = false
 		if communityLibraryPublishedTab().Contains(x, y) {
 			g.communityView = communityPublished
 			g.communityPage = 0
@@ -350,29 +406,40 @@ func (g *Game) updateCommunityInput() {
 			g.communityView = communityCreate
 			return
 		}
+		indexes := g.filteredCommunityDraftIndexes()
 		start := g.communityPage * communityDraftsPerPage
 		for slot := 0; slot < communityDraftsPerPage; slot++ {
+			position := start + slot
+			if position >= len(indexes) {
+				break
+			}
+			index := indexes[position]
 			if communityDraftEditButton(slot).Contains(x, y) {
-				g.editCommunityDraft(start + slot)
+				g.editCommunityDraft(index)
 				return
 			}
 			if communityDraftPublishButton(slot).Contains(x, y) {
-				g.queueCommunityDraftPublish(start + slot)
+				g.queueCommunityDraftPublish(index)
 				return
 			}
 			if communityDraftDeleteButton(slot).Contains(x, y) {
-				g.deleteCommunityDraft(start + slot)
+				g.deleteCommunityDraft(index)
 				return
 			}
 		}
 		if communityPrevButton().Contains(x, y) && g.communityPage > 0 {
 			g.communityPage--
 		}
-		if communityNextButton().Contains(x, y) && (g.communityPage+1)*communityDraftsPerPage < len(g.communityLibrary.Drafts) {
+		if communityNextButton().Contains(x, y) && (g.communityPage+1)*communityDraftsPerPage < len(indexes) {
 			g.communityPage++
 		}
 	case communityBrowse:
 		switch {
+		case communityGalleryAllButton().Contains(x, y):
+			g.galleryKind = "all"
+			g.communityPage = 0
+			requestCommunityGallery(g.galleryKind, g.gallerySort)
+			return
 		case communityGalleryArtButton().Contains(x, y):
 			g.galleryKind = "art"
 			g.communityPage = 0
@@ -525,7 +592,7 @@ func (g *Game) updateCommunityInput() {
 			}
 		}
 		if communityPackDoneButton().Contains(x, y) {
-			g.createLocalPack()
+			g.openNewPackSetup()
 			return
 		}
 		if communityPrevButton().Contains(x, y) && g.communityPage > 0 {
@@ -533,6 +600,24 @@ func (g *Game) updateCommunityInput() {
 		}
 		if communityNextButton().Contains(x, y) && (g.communityPage+1)*communityPackDraftsPerPage < len(g.communityLibrary.Drafts) {
 			g.communityPage++
+		}
+	case communityNewArtSetup:
+		if communityNewArtTitleField().Contains(x, y) {
+			return
+		}
+		if communityNewArtStartButton().Contains(x, y) {
+			g.startNewCommunityArt()
+		}
+	case communityPackSetup:
+		switch {
+		case communityPackTitleField().Contains(x, y):
+			g.packSetupField = 0
+		case communityPackDescriptionField().Contains(x, y):
+			g.packSetupField = 1
+		case communityPackSaveDraftButton().Contains(x, y):
+			g.savePackSetup(false)
+		case communityPackSetupPublishButton().Contains(x, y):
+			g.savePackSetup(true)
 		}
 	case communitySignIn:
 		if communitySignedIn() {
@@ -602,6 +687,18 @@ func (g *Game) submitCommunitySignIn() {
 }
 
 func (g *Game) communityBack() {
+	if g.communityView == communityNewArtSetup {
+		g.communityView = communityCreate
+		return
+	}
+	if g.communityView == communityPackSetup {
+		if g.packSetupID == "" {
+			g.communityView = communityPackBuild
+		} else {
+			g.communityView = communityPacks
+		}
+		return
+	}
 	if g.communityView == communityPublishSetup {
 		g.communityView = communityMyArt
 		return

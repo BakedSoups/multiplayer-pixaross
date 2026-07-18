@@ -244,7 +244,7 @@
 	    const body = await response.json();
 	    if (!response.ok) throw new Error(body.message || body.hint || "Publish failed");
 	    window.__pendingCommunityPublishedID = draft.id;
-	    window.requestCommunityGallery?.("art", window.__communityGallerySort || "new");
+	    window.requestCommunityGallery?.(window.__communityGalleryKind || "all", window.__communityGallerySort || "new");
 	    setCommunityResult(submitOfficial ? "published and sent for main-game review" : "level published");
 	  } catch (error) {
 	    setCommunityResult(error.message || "publish failed");
@@ -265,7 +265,7 @@
 	    const body = await response.json();
 	    if (!response.ok) throw new Error(body.message || body.hint || "Pack publish failed");
 	    window.__pendingCommunityPublishedPackID = pack.id;
-	    window.requestCommunityGallery?.("pack", window.__communityGallerySort || "new");
+	    window.requestCommunityGallery?.(window.__communityGalleryKind || "all", window.__communityGallerySort || "new");
 	    setCommunityResult("pack published");
 	  } catch (error) {
 	    setCommunityResult(error.message || "pack publish failed");
@@ -420,16 +420,18 @@
 	  if (!url || !key) return setCommunityResult("community cloud is not configured yet");
 	  try {
 	    const session = await validCommunitySession().catch(() => null);
-	    const response = await fetch(`${url}/rest/v1/rpc/browse_gallery`, {
-	      method: "POST", headers: communityHeaders(session?.access_token),
-	      body: JSON.stringify({ p_kind: kind, p_sort: sort })
-	    });
-	    const body = await response.json();
-	    if (!response.ok) {
-	      const missingSchema = /browse_gallery|schema cache|function/i.test(body.message || "");
-	      throw new Error(missingSchema ? "Gallery needs database migration 003" : (body.message || "Could not load gallery"));
-	    }
-	    window.__pendingCommunityGallery = JSON.stringify(body || []);
+	    const loadKind = async (requestedKind) => {
+	      const response = await fetch(`${url}/rest/v1/rpc/browse_gallery`, {
+	        method: "POST", headers: communityHeaders(session?.access_token),
+	        body: JSON.stringify({ p_kind: requestedKind, p_sort: sort })
+	      });
+	      const body = await response.json();
+	      if (!response.ok) throw new Error(body.message || "Could not load gallery");
+	      return body || [];
+	    };
+	    let body = kind === "all" ? (await Promise.all([loadKind("art"), loadKind("pack")])).flat() : await loadKind(kind);
+	    body.sort((a,b) => sort === "top" ? (b.likes-a.likes || String(b.publishedAt).localeCompare(String(a.publishedAt))) : String(b.publishedAt).localeCompare(String(a.publishedAt)));
+	    window.__pendingCommunityGallery = JSON.stringify(body);
 	  } catch (error) {
 	    setCommunityResult(error.message || "could not load gallery");
 	  }
@@ -445,7 +447,7 @@
 	    });
 	    const body = await response.json();
 	    if (!response.ok) throw new Error(body.message || "Could not update like");
-	    window.requestCommunityGallery(kind, window.__communityGallerySort || "new");
+	    window.requestCommunityGallery(window.__communityGalleryKind || kind, window.__communityGallerySort || "new");
 	  } catch (error) {
 	    setCommunityResult(error.message || "could not update like");
 	  }
@@ -463,7 +465,7 @@
 	    const body = rawBody ? JSON.parse(rawBody) : null;
 	    if (!response.ok) throw new Error(body?.message || "Could not promote item");
 	    setCommunityResult("profile promotion updated");
-	    window.requestCommunityGallery(kind, window.__communityGallerySort || "new");
+	    window.requestCommunityGallery(window.__communityGalleryKind || kind, window.__communityGallerySort || "new");
 	    window.requestCommunityPublished?.();
 	  } catch (error) {
 	    setCommunityResult(error.message || "could not promote item");
