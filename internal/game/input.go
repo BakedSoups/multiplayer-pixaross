@@ -178,6 +178,11 @@ func (g *Game) updateMainMenuInput() {
 }
 
 func (g *Game) updateCommunityInput() {
+	if raw := takeCommunityCreators(); raw != "" {
+		if err := g.loadCommunityCreators(raw); err != nil {
+			g.showCommunityNotice("could not load creators")
+		}
+	}
 	if raw := takeCommunityCloudDrafts(); raw != "" {
 		if err := g.mergeCloudDrafts(raw); err != nil {
 			g.showCommunityNotice("could not sync cloud drafts")
@@ -250,6 +255,11 @@ func (g *Game) updateCommunityInput() {
 			g.communityPage = 0
 			g.syncLocalDrafts()
 			requestCommunityCloudDrafts()
+		case communityCreatorsButton().Contains(x, y):
+			g.communityView = communityCreators
+			g.selectedCreator = -1
+			g.communityPage = 0
+			requestCommunityCreators()
 		}
 	case communityCreate:
 		switch {
@@ -334,6 +344,39 @@ func (g *Game) updateCommunityInput() {
 				g.submitCommunitySignIn()
 			}
 		}
+	case communityCreators:
+		start := g.communityPage * 4
+		for slot := 0; slot < 4 && start+slot < len(g.communityCreators); slot++ {
+			if communityCreatorButton(slot).Contains(x, y) {
+				g.selectedCreator = start + slot
+				g.communityPage = 0
+				g.communityView = communityCreatorProfile
+				return
+			}
+		}
+		if communityPrevButton().Contains(x, y) && g.communityPage > 0 {
+			g.communityPage--
+		}
+		if communityNextButton().Contains(x, y) && (g.communityPage+1)*4 < len(g.communityCreators) {
+			g.communityPage++
+		}
+	case communityCreatorProfile:
+		if g.selectedCreator >= 0 && g.selectedCreator < len(g.communityCreators) {
+			levels := g.communityCreators[g.selectedCreator].Levels
+			start := g.communityPage * 6
+			for slot := 0; slot < 6 && start+slot < len(levels); slot++ {
+				if communityCreatorLevelButton(slot).Contains(x, y) {
+					g.playCreatorLevel(start + slot)
+					return
+				}
+			}
+			if communityPrevButton().Contains(x, y) && g.communityPage > 0 {
+				g.communityPage--
+			}
+			if communityNextButton().Contains(x, y) && (g.communityPage+1)*6 < len(levels) {
+				g.communityPage++
+			}
+		}
 	}
 }
 
@@ -349,6 +392,10 @@ func (g *Game) submitCommunitySignIn() {
 }
 
 func (g *Game) communityBack() {
+	if g.communityView == communityCreatorProfile {
+		g.communityView = communityCreators
+		return
+	}
 	if g.communityView == communityPackBuild {
 		g.communityView = communityPacks
 		return

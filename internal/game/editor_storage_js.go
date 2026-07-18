@@ -196,6 +196,34 @@ func takeCommunityCloudDrafts() string {
 	return value.String()
 }
 
+func requestCommunityCreators() bool {
+	fn := js.Global().Get("requestCommunityCreators")
+	if fn.IsUndefined() || fn.IsNull() {
+		return false
+	}
+	fn.Invoke()
+	return true
+}
+
+func takeCommunityCreators() string {
+	fn := js.Global().Get("takeCommunityCreators")
+	if fn.IsUndefined() || fn.IsNull() {
+		return ""
+	}
+	value := fn.Invoke()
+	if value.IsUndefined() || value.IsNull() {
+		return ""
+	}
+	return value.String()
+}
+
+func syncCommunityProfile(raw string) {
+	fn := js.Global().Get("syncCommunityProfile")
+	if !fn.IsUndefined() && !fn.IsNull() {
+		fn.Invoke(raw)
+	}
+}
+
 func saveEditorPack(raw string) bool {
 	storage := js.Global().Get("localStorage")
 	if storage.IsUndefined() || storage.IsNull() {

@@ -109,6 +109,7 @@
 	window.__pendingCommunityResult = "";
 	window.__pendingCommunityCatalog = "";
 	window.__pendingCommunityCloudDrafts = "";
+	window.__pendingCommunityCreators = "";
 	const communitySessionKey = "pixaross.community.session";
 	const communityConfig = () => ({
 	  url: String(window.SUPABASE_URL || "").replace(/\/$/, ""),
@@ -293,6 +294,41 @@
 	    })));
 	  } catch (error) {
 	    setCommunityResult(error.message || "could not sync cloud drafts");
+	  }
+	};
+	window.takeCommunityCreators = () => {
+	  const value = window.__pendingCommunityCreators || "";
+	  window.__pendingCommunityCreators = "";
+	  return value;
+	};
+	window.requestCommunityCreators = async () => {
+	  const { url, key } = communityConfig();
+	  if (!url || !key) return setCommunityResult("community cloud is not configured yet");
+	  try {
+	    const response = await fetch(`${url}/rest/v1/rpc/browse_creators`, {
+	      method: "POST", headers: communityHeaders(readCommunitySession()?.access_token), body: "{}"
+	    });
+	    const body = await response.json();
+	    if (!response.ok) {
+	      const missingSchema = /browse_creators|schema cache|function/i.test(body.message || "");
+	      throw new Error(missingSchema ? "Creator profiles need database migration 002" : (body.message || "Could not load creators"));
+	    }
+	    window.__pendingCommunityCreators = JSON.stringify(body || []);
+	  } catch (error) {
+	    setCommunityResult(error.message || "could not load creators");
+	  }
+	};
+	window.syncCommunityProfile = async (raw) => {
+	  const { url, key } = communityConfig();
+	  const session = readCommunitySession();
+	  if (!url || !key || !session?.access_token) return;
+	  try {
+	    await fetch(`${url}/rest/v1/rpc/save_creator_profile`, {
+	      method: "POST", headers: communityHeaders(session.access_token),
+	      body: JSON.stringify({ p_avatar_puzzle: JSON.parse(raw) })
+	    });
+	  } catch (_) {
+	    // The local badge remains available while offline.
 	  }
 	};
     window.takeEditorImageImport = () => {

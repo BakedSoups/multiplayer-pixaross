@@ -85,6 +85,9 @@ type Game struct {
 	activeCommunityPack  string
 	packSelection        map[string]bool
 	communityEmail       string
+	communityCreators    []community.CreatorProfile
+	selectedCreator      int
+	communityPlayReturn  communityView
 	communityNotice      string
 	communityNoticeUntil time.Time
 }
@@ -130,6 +133,7 @@ func New(puzzlePath string) (*Game, error) {
 		editor:           initialEditor(),
 		profileArt:       initialProfileArt(),
 		communityLibrary: loadCommunityLibrary(),
+		selectedCreator:  -1,
 		editorLastX:      -1,
 		editorLastY:      -1,
 	}
@@ -342,7 +346,7 @@ func (g *Game) leavePuzzle() {
 		if g.activeCommunityPack != "" {
 			g.communityView = communityPacks
 		} else {
-			g.communityView = communityBrowse
+			g.communityView = g.communityPlayReturn
 		}
 		g.mode = screenCommunity
 		return
@@ -361,7 +365,7 @@ func (g *Game) leaveReveal() {
 		if g.activeCommunityPack != "" {
 			g.communityView = communityPacks
 		} else {
-			g.communityView = communityBrowse
+			g.communityView = g.communityPlayReturn
 		}
 		g.mode = screenCommunity
 		return

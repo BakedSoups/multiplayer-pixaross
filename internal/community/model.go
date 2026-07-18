@@ -57,6 +57,13 @@ type CommunityLevelStats struct {
 	Likes int `json:"likes"`
 }
 
+type CreatorProfile struct {
+	ID           string           `json:"id"`
+	DisplayName  string           `json:"displayName"`
+	AvatarPuzzle *nonogram.Puzzle `json:"avatarPuzzle,omitempty"`
+	Levels       []LevelVersion   `json:"levels"`
+}
+
 type LevelVersion struct {
 	ID          string           `json:"id"`
 	LevelID     string           `json:"levelId"`

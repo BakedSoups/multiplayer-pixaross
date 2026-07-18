@@ -21,6 +21,8 @@ const (
 	communityMyArt
 	communitySignIn
 	communityPackBuild
+	communityCreators
+	communityCreatorProfile
 )
 
 func loadCommunityLibrary() community.Library {
@@ -67,6 +69,9 @@ func (g *Game) closeProfileEditor(save bool) {
 		g.editor.selectLayer(editorLayerAfter)
 		g.profileArt = g.editor.clone()
 		saveCommunityProfile(g.profileArt.packJSON())
+		if raw, err := json.Marshal(g.profileArt.puzzle()); err == nil {
+			syncCommunityProfile(string(raw))
+		}
 	}
 	g.editor = g.profileReturn
 	g.currentDraftID = g.profileDraftID
@@ -234,12 +239,47 @@ func (g *Game) loadCommunityCatalog(raw string) error {
 	return nil
 }
 
+func (g *Game) loadCommunityCreators(raw string) error {
+	var creators []community.CreatorProfile
+	if err := json.Unmarshal([]byte(raw), &creators); err != nil {
+		return err
+	}
+	for i := range creators {
+		if creators[i].AvatarPuzzle != nil {
+			_ = creators[i].AvatarPuzzle.ParseSolution()
+		}
+		for j := range creators[i].Levels {
+			if creators[i].Levels[j].Puzzle != nil {
+				if err := creators[i].Levels[j].Puzzle.ParseSolution(); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	g.communityCreators = creators
+	return nil
+}
+
+func (g *Game) playCreatorLevel(index int) {
+	if g.selectedCreator < 0 || g.selectedCreator >= len(g.communityCreators) {
+		return
+	}
+	levels := g.communityCreators[g.selectedCreator].Levels
+	if index < 0 || index >= len(levels) || levels[index].Puzzle == nil {
+		return
+	}
+	g.activeCommunityPack = ""
+	g.communityPlayReturn = communityCreatorProfile
+	g.loadCommunityPuzzle(levels[index].Puzzle)
+}
+
 func (g *Game) playCommunityVersion(index int) {
 	if index < 0 || index >= len(g.communityCatalog) || g.communityCatalog[index].Puzzle == nil {
 		return
 	}
 	p := g.communityCatalog[index].Puzzle
 	g.activeCommunityPack = ""
+	g.communityPlayReturn = communityBrowse
 	g.loadCommunityPuzzle(p)
 }
 

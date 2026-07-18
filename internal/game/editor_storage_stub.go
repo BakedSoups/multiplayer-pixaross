@@ -40,6 +40,12 @@ func requestCommunityCloudDrafts() bool { return false }
 
 func takeCommunityCloudDrafts() string { return "" }
 
+func requestCommunityCreators() bool { return false }
+
+func takeCommunityCreators() string { return "" }
+
+func syncCommunityProfile(string) {}
+
 func saveEditorPack(string) bool {
 	return false
 }
