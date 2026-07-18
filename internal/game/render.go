@@ -236,7 +236,8 @@ func (g *Game) drawBoard(screen *ebiten.Image) {
 			case nonogram.CellFilled:
 				drawRounded(screen, inset(cellRect, 4), 4, colFill)
 			case nonogram.CellMarked:
-				drawX(screen, inset(cellRect, 8), color.RGBA{245, 139, 17, 255})
+				markInset := math.Max(2, math.Min(5, l.cellSize*0.18))
+				drawX(screen, inset(cellRect, markInset), color.RGBA{245, 139, 17, 255})
 			}
 		}
 	}
