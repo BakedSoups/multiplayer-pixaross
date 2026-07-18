@@ -123,6 +123,38 @@
 	  try { return JSON.parse(localStorage.getItem(communitySessionKey) || "null"); } catch (_) { return null; }
 	};
 	const writeCommunitySession = (session) => localStorage.setItem(communitySessionKey, JSON.stringify(session));
+	let communityRefreshPromise = null;
+	const refreshCommunitySession = async () => {
+	  if (communityRefreshPromise) return communityRefreshPromise;
+	  const session = readCommunitySession();
+	  const { url, key } = communityConfig();
+	  if (!session?.refresh_token || !url || !key) return session;
+	  communityRefreshPromise = (async () => {
+	    const response = await fetch(`${url}/auth/v1/token?grant_type=refresh_token`, {
+	      method: "POST", headers: { apikey: key, "Content-Type": "application/json" },
+	      body: JSON.stringify({ refresh_token: session.refresh_token })
+	    });
+	    const body = await response.json();
+	    if (!response.ok) {
+	      localStorage.removeItem(communitySessionKey);
+	      throw new Error(body.msg || body.message || "session expired; sign in again");
+	    }
+	    const refreshed = {
+	      access_token: body.access_token,
+	      refresh_token: body.refresh_token || session.refresh_token,
+	      expires_at: Math.floor(Date.now()/1000) + Number(body.expires_in || 3600)
+	    };
+	    writeCommunitySession(refreshed);
+	    return refreshed;
+	  })();
+	  try { return await communityRefreshPromise; } finally { communityRefreshPromise = null; }
+	};
+	const validCommunitySession = async () => {
+	  const session = readCommunitySession();
+	  if (!session?.access_token) return null;
+	  if (Number(session.expires_at || 0) > Math.floor(Date.now()/1000) + 60) return session;
+	  return refreshCommunitySession();
+	};
 	const communityHeaders = (token) => {
 	  const { key } = communityConfig();
 	  return { apikey: key, Authorization: `Bearer ${token || key}`, "Content-Type": "application/json" };
@@ -152,6 +184,10 @@
 	  });
 	  history.replaceState(null, "", location.pathname + location.search);
 	  setCommunityResult("signed in");
+	}
+	if (readCommunitySession()?.refresh_token) {
+	  validCommunitySession().catch((error) => setCommunityResult(error.message));
+	  setInterval(() => validCommunitySession().catch(() => null), 5 * 60 * 1000);
 	}
 	window.requestCommunitySignIn = async (email) => {
 	  const { url, key } = communityConfig();
@@ -185,7 +221,7 @@
 	window.requestCommunityPublish = async (raw, submitOfficial, rightsConfirmed) => {
 	  const { url, key } = communityConfig();
 	  if (!url || !key) return setCommunityResult("community cloud is not configured yet");
-	  const session = readCommunitySession();
+	  const session = await validCommunitySession().catch((error) => { setCommunityResult(error.message); return null; });
 	  if (!session || !session.access_token) {
 	    setCommunityResult("sign in before publishing");
 	    return;
@@ -217,7 +253,7 @@
 	window.requestCommunityPackPublish = async (raw) => {
 	  const { url, key } = communityConfig();
 	  if (!url || !key) return setCommunityResult("community cloud is not configured yet");
-	  const session = readCommunitySession();
+	  const session = await validCommunitySession().catch((error) => { setCommunityResult(error.message); return null; });
 	  if (!session?.access_token) return setCommunityResult("sign in and publish each level before publishing a pack");
 	  try {
 	    const pack = JSON.parse(raw);
@@ -244,8 +280,9 @@
 	  const { url, key } = communityConfig();
 	  if (!url || !key || kind !== "levels") return;
 	  try {
+	    const session = await validCommunitySession().catch(() => null);
 	    const response = await fetch(`${url}/rest/v1/level_versions?select=id,level_id,version,title,description,tags,puzzle,published_at&order=published_at.desc&limit=20`, {
-	      headers: communityHeaders(readCommunitySession()?.access_token)
+	      headers: communityHeaders(session?.access_token)
 	    });
 	    const rows = await response.json();
 	    if (!response.ok) {
@@ -268,7 +305,7 @@
 	};
 	window.syncCommunityDraft = async (raw) => {
 	  const { url, key } = communityConfig();
-	  const session = readCommunitySession();
+	  const session = await validCommunitySession().catch(() => null);
 	  if (!url || !key || !session?.access_token) return;
 	  try {
 	    await fetch(`${url}/rest/v1/rpc/save_draft`, {
@@ -285,7 +322,7 @@
 	};
 	window.requestCommunityCloudDrafts = async () => {
 	  const { url, key } = communityConfig();
-	  const session = readCommunitySession();
+	  const session = await validCommunitySession().catch(() => null);
 	  if (!url || !key || !session?.access_token) return;
 	  try {
 	    const response = await fetch(`${url}/rest/v1/drafts?select=local_id,title,description,tags,puzzle,playtested,updated_at&order=updated_at.desc`, { headers: communityHeaders(session.access_token) });
@@ -309,8 +346,9 @@
 	  const { url, key } = communityConfig();
 	  if (!url || !key) return setCommunityResult("community cloud is not configured yet");
 	  try {
+	    const session = await validCommunitySession().catch(() => null);
 	    const response = await fetch(`${url}/rest/v1/rpc/browse_creators`, {
-	      method: "POST", headers: communityHeaders(readCommunitySession()?.access_token), body: "{}"
+	      method: "POST", headers: communityHeaders(session?.access_token), body: "{}"
 	    });
 	    const body = await response.json();
 	    if (!response.ok) {
@@ -324,7 +362,7 @@
 	};
 	window.syncCommunityProfile = async (raw) => {
 	  const { url, key } = communityConfig();
-	  const session = readCommunitySession();
+	  const session = await validCommunitySession().catch(() => null);
 	  if (!url || !key || !session?.access_token) return;
 	  try {
 	    const response = await fetch(`${url}/rest/v1/rpc/save_creator_profile`, {
@@ -349,7 +387,7 @@
 	};
 	window.requestCommunityPublished = async () => {
 	  const { url, key } = communityConfig();
-	  const session = readCommunitySession();
+	  const session = await validCommunitySession().catch((error) => { setCommunityResult(error.message); return null; });
 	  if (!url || !key || !session?.access_token) return setCommunityResult("sign in to view published work");
 	  try {
 	    const response = await fetch(`${url}/rest/v1/rpc/browse_my_published`, {
@@ -362,7 +400,7 @@
 	};
 	window.unpublishCommunityItem = async (kind, id) => {
 	  const { url } = communityConfig();
-	  const session = readCommunitySession();
+	  const session = await validCommunitySession().catch((error) => { setCommunityResult(error.message); return null; });
 	  if (!session?.access_token) return setCommunityResult("sign in to manage published work");
 	  try {
 	    const response = await fetch(`${url}/rest/v1/rpc/unpublish_community_item`, {
@@ -381,8 +419,9 @@
 	  const { url, key } = communityConfig();
 	  if (!url || !key) return setCommunityResult("community cloud is not configured yet");
 	  try {
+	    const session = await validCommunitySession().catch(() => null);
 	    const response = await fetch(`${url}/rest/v1/rpc/browse_gallery`, {
-	      method: "POST", headers: communityHeaders(readCommunitySession()?.access_token),
+	      method: "POST", headers: communityHeaders(session?.access_token),
 	      body: JSON.stringify({ p_kind: kind, p_sort: sort })
 	    });
 	    const body = await response.json();
@@ -397,7 +436,7 @@
 	};
 	window.toggleCommunityLike = async (kind, id) => {
 	  const { url } = communityConfig();
-	  const session = readCommunitySession();
+	  const session = await validCommunitySession().catch((error) => { setCommunityResult(error.message); return null; });
 	  if (!session?.access_token) return setCommunityResult("sign in to like published work");
 	  try {
 	    const response = await fetch(`${url}/rest/v1/rpc/toggle_gallery_like`, {
@@ -413,7 +452,7 @@
 	};
 	window.promoteCommunityItem = async (kind, id) => {
 	  const { url } = communityConfig();
-	  const session = readCommunitySession();
+	  const session = await validCommunitySession().catch((error) => { setCommunityResult(error.message); return null; });
 	  if (!session?.access_token) return setCommunityResult("sign in to promote work");
 	  try {
 	    const response = await fetch(`${url}/rest/v1/rpc/set_profile_promotion`, {
