@@ -98,9 +98,26 @@ func (g *Game) drawEditorToolbar(screen *ebiten.Image) {
 	drawEditorToolButton(screen, editorEraserButton(), g.editor.Tool == editorToolEraser)
 	drawPixelIconImage(screen, g.icons.Eraser, editorEraserButton())
 	drawEditorToolButton(screen, editorFillButton(), g.editor.Tool == editorToolFill)
-	drawPixelIconImage(screen, g.icons.Fill, editorFillButton())
+	drawPixelBucketIcon(screen, editorFillButton(), g.editor.Tool == editorToolFill)
 	drawEditorToolButton(screen, editorEyeButton(), g.editor.Tool == editorToolEyedropper)
 	drawPixelIconImage(screen, g.icons.Eyedropper, editorEyeButton())
+}
+
+func drawPixelBucketIcon(screen *ebiten.Image, r rect, active bool) {
+	ink := color.Color(colInk)
+	paint := color.Color(colBlue)
+	if active {
+		ink = colWhite
+		paint = colAccentSoft
+	}
+	x := float32(r.x + 20)
+	y := float32(r.y + 11)
+	vector.StrokeLine(screen, x+3, y+3, x+20, y+20, 4, ink, false)
+	vector.StrokeLine(screen, x+20, y+20, x+10, y+30, 4, ink, false)
+	vector.StrokeLine(screen, x+10, y+30, x-7, y+13, 4, ink, false)
+	vector.StrokeLine(screen, x-7, y+13, x+3, y+3, 4, ink, false)
+	vector.DrawFilledRect(screen, x+3, y+23, 16, 5, paint, false)
+	vector.DrawFilledRect(screen, x+23, y+27, 6, 6, paint, false)
 }
 
 func (g *Game) drawEditorPalette(screen *ebiten.Image) {

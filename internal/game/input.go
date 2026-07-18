@@ -752,12 +752,11 @@ func (g *Game) handleEditorButton(x, y int) bool {
 		switch {
 		case editorBackButton().Contains(x, y):
 			g.closeProfileEditor(false)
+			return true
 		case profileSaveButton().Contains(x, y):
 			g.closeProfileEditor(true)
-		default:
-			return false
+			return true
 		}
-		return true
 	}
 	switch {
 	case editorBackButton().Contains(x, y):
