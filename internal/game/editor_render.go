@@ -32,7 +32,6 @@ func (g *Game) drawEditor(screen *ebiten.Image) {
 	g.drawEditorToolbar(screen)
 	g.drawEditorPalette(screen)
 	if g.editingProfile {
-		drawButton(screen, profileBioButton(), "bio")
 		drawButton(screen, profileSaveButton(), "save profile")
 	} else {
 		g.drawEditorLayers(screen)
@@ -40,9 +39,6 @@ func (g *Game) drawEditor(screen *ebiten.Image) {
 	}
 	if g.editorSizeOpen && !g.editingProfile {
 		g.drawEditorSizeMenu(screen)
-	}
-	if g.profileBioEditing {
-		g.drawProfileBioEditor(screen)
 	}
 
 	if time.Now().Before(g.menuNoticeUntil) {
@@ -158,15 +154,6 @@ func drawEditorToolButton(screen *ebiten.Image, r rect, active bool) {
 	drawIconButton(screen, r)
 }
 
-func (g *Game) drawProfileBioEditor(screen *ebiten.Image) {
-	drawRounded(screen, rect{x: 54, y: 218, w: 432, h: 234}, 8, colGridHeavy)
-	drawRounded(screen, rect{x: 60, y: 224, w: 420, h: 222}, 6, colPanel)
-	drawCenteredText(screen, "PROFILE BIO", rect{x: 90, y: 242, w: 360, h: 30}, colInk)
-	drawPublishField(screen, profileBioField(), "Bio (120 characters)", g.profileBioDraft, true)
-	drawButton(screen, profileBioCancelButton(), "cancel")
-	drawButton(screen, profileBioSaveButton(), "save")
-}
-
 func drawPixelIconImage(dst, icon *ebiten.Image, r rect) {
 	drawPixelIconImageSized(dst, icon, r, 34)
 }
@@ -250,14 +237,10 @@ func editorAfterButton() rect  { return rect{x: 258, y: 653, w: 118, h: 34} }
 func editorLayerPreviewButton() rect {
 	return rect{x: 382, y: 653, w: 36, h: 34}
 }
-func editorSaveButton() rect       { return rect{x: 60, y: 700, w: 130, h: 38} }
-func editorExportButton() rect     { return rect{x: 205, y: 700, w: 130, h: 38} }
-func editorPreviewButton() rect    { return rect{x: 350, y: 700, w: 130, h: 38} }
-func profileSaveButton() rect      { return rect{x: 174, y: 680, w: 192, h: 44} }
-func profileBioButton() rect       { return rect{x: 430, y: 22, w: 76, h: 42} }
-func profileBioField() rect        { return rect{x: 84, y: 300, w: 372, h: 44} }
-func profileBioCancelButton() rect { return rect{x: 104, y: 378, w: 140, h: 40} }
-func profileBioSaveButton() rect   { return rect{x: 296, y: 378, w: 140, h: 40} }
+func editorSaveButton() rect    { return rect{x: 60, y: 700, w: 130, h: 38} }
+func editorExportButton() rect  { return rect{x: 205, y: 700, w: 130, h: 38} }
+func editorPreviewButton() rect { return rect{x: 350, y: 700, w: 130, h: 38} }
+func profileSaveButton() rect   { return rect{x: 174, y: 680, w: 192, h: 44} }
 func editorPaletteRect(index int) rect {
 	return rect{x: 48 + float64(index)*56, y: 603, w: 36, h: 36}
 }

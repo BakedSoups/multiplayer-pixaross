@@ -1,6 +1,7 @@
 package game
 
 import (
+	"encoding/json"
 	"image"
 	"strings"
 	"time"
@@ -243,6 +244,16 @@ func (g *Game) updateCommunityInput() {
 			return
 		}
 	}
+	if g.communityView == communitySignIn && communitySignedIn() && g.profileBioEditing {
+		for _, char := range ebiten.AppendInputChars(nil) {
+			if char >= 32 && char <= 126 && len(g.profileBioDraft) < 120 {
+				g.profileBioDraft += string(char)
+			}
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) && len(g.profileBioDraft) > 0 {
+			g.profileBioDraft = g.profileBioDraft[:len(g.profileBioDraft)-1]
+		}
+	}
 	if g.communityView == communityPublishSetup {
 		for _, char := range ebiten.AppendInputChars(nil) {
 			if char < 32 || char > 126 {
@@ -352,6 +363,7 @@ func (g *Game) updateCommunityInput() {
 		return
 	}
 	if g.communityView == communityHome && communityAccountButton().Contains(x, y) {
+		g.profileBioDraft = g.profileBio
 		g.communityView = communitySignIn
 		return
 	}
@@ -609,6 +621,12 @@ func (g *Game) updateCommunityInput() {
 			g.startNewCommunityArt()
 		}
 	case communityPackSetup:
+		for art := 0; art < len(g.packSetupItems) && art < 8; art++ {
+			if communityPackSetupPreview(art).Contains(x, y) {
+				g.packSetupPreview = art
+				return
+			}
+		}
 		switch {
 		case communityPackTitleField().Contains(x, y):
 			g.packSetupField = 0
@@ -621,7 +639,17 @@ func (g *Game) updateCommunityInput() {
 		}
 	case communitySignIn:
 		if communitySignedIn() {
-			if communitySignOutButton().Contains(x, y) {
+			switch {
+			case communityAccountBioField().Contains(x, y):
+				g.profileBioEditing = true
+			case communityAccountBioSaveButton().Contains(x, y):
+				g.profileBio = strings.TrimSpace(g.profileBioDraft)
+				saveCommunityBio(g.profileBio)
+				if raw, err := json.Marshal(g.profileArt.puzzle()); err == nil {
+					syncCommunityProfile(string(raw), g.profileBio)
+				}
+				g.profileBioEditing = false
+			case communitySignOutButton().Contains(x, y):
 				requestCommunitySignOut()
 				g.communityView = communityHome
 			}
@@ -735,32 +763,6 @@ func (g *Game) communityBack() {
 }
 
 func (g *Game) updateEditorInput() {
-	if g.editingProfile && g.profileBioEditing {
-		for _, char := range ebiten.AppendInputChars(nil) {
-			if char >= 32 && char <= 126 && len(g.profileBioDraft) < 120 {
-				g.profileBioDraft += string(char)
-			}
-		}
-		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) && len(g.profileBioDraft) > 0 {
-			g.profileBioDraft = g.profileBioDraft[:len(g.profileBioDraft)-1]
-		}
-		if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
-			g.profileBioEditing = false
-			return
-		}
-		x, y, _, justPressed, _ := pointerState()
-		if justPressed {
-			switch {
-			case profileBioSaveButton().Contains(x, y):
-				g.profileBio = strings.TrimSpace(g.profileBioDraft)
-				saveCommunityBio(g.profileBio)
-				g.profileBioEditing = false
-			case profileBioCancelButton().Contains(x, y):
-				g.profileBioEditing = false
-			}
-		}
-		return
-	}
 	if title := takeEditorTitle(); title != "" {
 		g.editor.Title = title
 		_ = g.saveCurrentDraft(false)
@@ -878,10 +880,6 @@ func (g *Game) handleEditorButton(x, y int) bool {
 			return true
 		case profileSaveButton().Contains(x, y):
 			g.closeProfileEditor(true)
-			return true
-		case profileBioButton().Contains(x, y):
-			g.profileBioDraft = g.profileBio
-			g.profileBioEditing = true
 			return true
 		}
 	}

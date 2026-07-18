@@ -119,6 +119,7 @@ type Game struct {
 	packSetupTitle         string
 	packSetupDescription   string
 	packSetupItems         []community.PackItem
+	packSetupPreview       int
 	packSetupField         int
 	communityNotice        string
 	communityNoticeUntil   time.Time

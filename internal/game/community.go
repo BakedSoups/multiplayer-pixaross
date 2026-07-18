@@ -572,6 +572,7 @@ func (g *Game) openNewPackSetup() {
 	g.packSetupTitle = fmt.Sprintf("My Pack %d", len(g.communityLibrary.Packs)+1)
 	g.packSetupDescription = ""
 	g.packSetupItems = items
+	g.packSetupPreview = 0
 	g.packSetupField = 0
 	g.packSelection = nil
 	g.communityView = communityPackSetup
@@ -608,6 +609,7 @@ func (g *Game) queueLocalPackPublish(index int) {
 	g.packSetupTitle = pack.Title
 	g.packSetupDescription = pack.Description
 	g.packSetupItems = append([]community.PackItem(nil), pack.Items...)
+	g.packSetupPreview = 0
 	g.packSetupField = 0
 	g.communityView = communityPackSetup
 }
@@ -618,6 +620,14 @@ func (g *Game) savePackSetup(publish bool) {
 		g.showCommunityNotice("pack title is required")
 		return
 	}
+	items := append([]community.PackItem(nil), g.packSetupItems...)
+	if g.packSetupPreview > 0 && g.packSetupPreview < len(items) {
+		cover := items[g.packSetupPreview]
+		items = append([]community.PackItem{cover}, append(items[:g.packSetupPreview], items[g.packSetupPreview+1:]...)...)
+	}
+	for i := range items {
+		items[i].Position = i
+	}
 	var pack *community.Pack
 	for i := range g.communityLibrary.Packs {
 		if g.communityLibrary.Packs[i].ID == g.packSetupID {
@@ -626,12 +636,13 @@ func (g *Game) savePackSetup(publish bool) {
 		}
 	}
 	if pack == nil {
-		created := community.Pack{ID: newLocalID("pack"), Visibility: community.VisibilityDraft, Status: community.LevelDraftStatus, Version: 1, Items: append([]community.PackItem(nil), g.packSetupItems...)}
+		created := community.Pack{ID: newLocalID("pack"), Visibility: community.VisibilityDraft, Status: community.LevelDraftStatus, Version: 1, Items: items}
 		g.communityLibrary.Packs = append([]community.Pack{created}, g.communityLibrary.Packs...)
 		pack = &g.communityLibrary.Packs[0]
 	}
 	pack.Title = title
 	pack.Description = strings.TrimSpace(g.packSetupDescription)
+	pack.Items = items
 	pack.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
 	if err := pack.Validate(); err != nil {
 		g.showCommunityNotice(err.Error())

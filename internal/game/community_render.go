@@ -85,15 +85,10 @@ func (g *Game) drawCommunityBrowse(screen *ebiten.Image) {
 		} else if len(item.Levels) > 0 && item.Levels[0].Puzzle != nil {
 			drawCommunityArtThumbnail(screen, item.Levels[0].Puzzle.RevealRaw, rect{x: r.x + 8, y: r.y + 8, w: 54, h: 54})
 		}
-		title := item.Title
-		if len(title) > 15 {
-			title = title[:15]
-		}
 		creator := item.CreatorName
 		if len(creator) > 15 {
 			creator = creator[:15]
 		}
-		drawText(screen, title, int(r.x+70), int(r.y+41), colInk)
 		avatar := defaultCommunityProfilePixels
 		if item.AvatarPuzzle != nil {
 			avatar = item.AvatarPuzzle.RevealRaw
@@ -355,12 +350,14 @@ func (g *Game) drawCommunityImportPreview(screen *ebiten.Image) {
 
 func (g *Game) drawCommunitySignIn(screen *ebiten.Image) {
 	drawCenteredText(screen, "ACCOUNT", rect{x: 100, y: 218, w: 340, h: 32}, colInk)
-	panel := rect{x: 72, y: 254, w: 396, h: 328}
+	panel := rect{x: 72, y: 254, w: 396, h: 380}
 	drawRounded(screen, panel, 6, colWhite)
 	drawRectOutline(screen, panel, 3, colGridHeavy)
 	if communitySignedIn() {
-		drawCommunityArtThumbnail(screen, g.profileArt.rawPixels(editorLayerAfter), rect{x: 218, y: 304, w: 104, h: 104})
-		drawCenteredText(screen, "Signed in", rect{x: 120, y: 424, w: 300, h: 30}, colInk)
+		drawCommunityArtThumbnail(screen, g.profileArt.rawPixels(editorLayerAfter), rect{x: 226, y: 278, w: 88, h: 88})
+		drawCenteredText(screen, "Signed in", rect{x: 120, y: 374, w: 300, h: 30}, colInk)
+		drawPublishField(screen, communityAccountBioField(), "Bio", g.profileBioDraft, g.profileBioEditing)
+		drawButton(screen, communityAccountBioSaveButton(), "save bio")
 		drawButton(screen, communitySignOutButton(), "sign out")
 		return
 	}
@@ -477,11 +474,15 @@ func (g *Game) drawCommunityNewArtSetup(screen *ebiten.Image) {
 
 func (g *Game) drawCommunityPackSetup(screen *ebiten.Image) {
 	drawCenteredText(screen, "PACK DETAILS", rect{x: 80, y: 190, w: 380, h: 30}, colInk)
+	drawCenteredText(screen, "Choose the artwork shown as your pack cover", rect{x: 60, y: 216, w: 420, h: 20}, colMuted)
 	for art, item := range g.packSetupItems {
 		if art >= 8 {
 			break
 		}
 		if draft, ok := g.communityLibrary.Draft(item.LevelID); ok && draft.Puzzle != nil {
+			if art == g.packSetupPreview {
+				drawRounded(screen, inset(communityPackSetupPreview(art), -4), 7, colAccent)
+			}
 			drawCommunityArtThumbnail(screen, draft.Puzzle.RevealRaw, communityPackSetupPreview(art))
 		}
 	}
@@ -845,10 +846,12 @@ func communityPackDeleteButton(slot int) rect {
 	r := communityPackRect(slot)
 	return rect{x: r.x + 414, y: r.y + 14, w: 28, h: 36}
 }
-func communityGoogleButton() rect   { return rect{x: 122, y: 370, w: 296, h: 42} }
-func communityEmailInput() rect     { return rect{x: 102, y: 434, w: 336, h: 44} }
-func communitySendLinkButton() rect { return rect{x: 142, y: 500, w: 256, h: 42} }
-func communitySignOutButton() rect  { return rect{x: 174, y: 468, w: 192, h: 42} }
+func communityGoogleButton() rect         { return rect{x: 122, y: 370, w: 296, h: 42} }
+func communityEmailInput() rect           { return rect{x: 102, y: 434, w: 336, h: 44} }
+func communitySendLinkButton() rect       { return rect{x: 142, y: 500, w: 256, h: 42} }
+func communityAccountBioField() rect      { return rect{x: 102, y: 430, w: 336, h: 44} }
+func communityAccountBioSaveButton() rect { return rect{x: 102, y: 506, w: 158, h: 42} }
+func communitySignOutButton() rect        { return rect{x: 280, y: 506, w: 158, h: 42} }
 func communityPackDraftButton(slot int) rect {
 	return rect{x: 66, y: 246 + float64(slot)*72, w: 408, h: 64}
 }
