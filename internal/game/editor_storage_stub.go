@@ -54,6 +54,12 @@ func requestCommunityGallery(string, string) bool { return false }
 
 func takeCommunityGallery() string { return "" }
 
+func requestCommunityPublished() bool { return false }
+
+func takeCommunityPublished() string { return "" }
+
+func unpublishCommunityItem(string, string) bool { return false }
+
 func toggleCommunityLike(string, string) bool { return false }
 
 func promoteCommunityItem(string, string) bool { return false }

@@ -269,6 +269,36 @@ func takeCommunityGallery() string {
 	return value.String()
 }
 
+func requestCommunityPublished() bool {
+	fn := js.Global().Get("requestCommunityPublished")
+	if fn.IsUndefined() || fn.IsNull() {
+		return false
+	}
+	fn.Invoke()
+	return true
+}
+
+func takeCommunityPublished() string {
+	fn := js.Global().Get("takeCommunityPublished")
+	if fn.IsUndefined() || fn.IsNull() {
+		return ""
+	}
+	value := fn.Invoke()
+	if value.IsUndefined() || value.IsNull() {
+		return ""
+	}
+	return value.String()
+}
+
+func unpublishCommunityItem(kind, id string) bool {
+	fn := js.Global().Get("unpublishCommunityItem")
+	if fn.IsUndefined() || fn.IsNull() {
+		return false
+	}
+	fn.Invoke(kind, id)
+	return true
+}
+
 func toggleCommunityLike(kind, id string) bool {
 	fn := js.Global().Get("toggleCommunityLike")
 	if fn.IsUndefined() || fn.IsNull() {

@@ -25,6 +25,7 @@ const (
 	communityCreatorProfile
 	communityGalleryPack
 	communityImportHelp
+	communityPublished
 )
 
 func loadCommunityLibrary() community.Library {
@@ -345,6 +346,16 @@ func (g *Game) loadCommunityGallery(raw string) error {
 		}
 	}
 	g.communityGallery = items
+	return nil
+}
+
+func (g *Game) loadCommunityPublished(raw string) error {
+	current := g.communityGallery
+	if err := g.loadCommunityGallery(raw); err != nil {
+		return err
+	}
+	g.communityPublished = g.communityGallery
+	g.communityGallery = current
 	return nil
 }
 

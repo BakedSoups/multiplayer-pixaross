@@ -111,6 +111,7 @@
 	window.__pendingCommunityCloudDrafts = "";
 	window.__pendingCommunityCreators = "";
 	window.__pendingCommunityGallery = "";
+	window.__pendingCommunityPublished = "";
 	window.__pendingCommunityPublishedID = "";
 	window.__pendingCommunityPublishedPackID = "";
 	const communitySessionKey = "pixaross.community.session";
@@ -341,6 +342,39 @@
 	  window.__pendingCommunityGallery = "";
 	  return value;
 	};
+	window.takeCommunityPublished = () => {
+	  const value = window.__pendingCommunityPublished || "";
+	  window.__pendingCommunityPublished = "";
+	  return value;
+	};
+	window.requestCommunityPublished = async () => {
+	  const { url, key } = communityConfig();
+	  const session = readCommunitySession();
+	  if (!url || !key || !session?.access_token) return setCommunityResult("sign in to view published work");
+	  try {
+	    const response = await fetch(`${url}/rest/v1/rpc/browse_my_published`, {
+	      method: "POST", headers: communityHeaders(session.access_token), body: "{}"
+	    });
+	    const body = await response.json();
+	    if (!response.ok) throw new Error(body.message || "Could not load published work");
+	    window.__pendingCommunityPublished = JSON.stringify(body || []);
+	  } catch (error) { setCommunityResult(error.message || "could not load published work"); }
+	};
+	window.unpublishCommunityItem = async (kind, id) => {
+	  const { url } = communityConfig();
+	  const session = readCommunitySession();
+	  if (!session?.access_token) return setCommunityResult("sign in to manage published work");
+	  try {
+	    const response = await fetch(`${url}/rest/v1/rpc/unpublish_community_item`, {
+	      method: "POST", headers: communityHeaders(session.access_token),
+	      body: JSON.stringify({ p_kind: kind, p_content_id: id })
+	    });
+	    const body = await response.text();
+	    if (!response.ok) throw new Error(JSON.parse(body || "{}").message || "Could not unpublish item");
+	    setCommunityResult(`${kind} unpublished`);
+	    window.requestCommunityPublished();
+	  } catch (error) { setCommunityResult(error.message || "could not unpublish item"); }
+	};
 	window.requestCommunityGallery = async (kind, sort) => {
 	  window.__communityGalleryKind = kind;
 	  window.__communityGallerySort = sort;
@@ -386,10 +420,12 @@
 	      method: "POST", headers: communityHeaders(session.access_token),
 	      body: JSON.stringify({ p_kind: kind, p_content_id: id })
 	    });
-	    const body = await response.json();
-	    if (!response.ok) throw new Error(body.message || "Could not promote item");
+	    const rawBody = await response.text();
+	    const body = rawBody ? JSON.parse(rawBody) : null;
+	    if (!response.ok) throw new Error(body?.message || "Could not promote item");
 	    setCommunityResult("profile promotion updated");
 	    window.requestCommunityGallery(kind, window.__communityGallerySort || "new");
+	    window.requestCommunityPublished?.();
 	  } catch (error) {
 	    setCommunityResult(error.message || "could not promote item");
 	  }

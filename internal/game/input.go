@@ -201,6 +201,11 @@ func (g *Game) updateCommunityInput() {
 			g.showCommunityNotice("could not load gallery")
 		}
 	}
+	if raw := takeCommunityPublished(); raw != "" {
+		if err := g.loadCommunityPublished(raw); err != nil {
+			g.showCommunityNotice("could not load published work")
+		}
+	}
 	if raw := takeCommunityCreators(); raw != "" {
 		if err := g.loadCommunityCreators(raw); err != nil {
 			g.showCommunityNotice("could not load creators")
@@ -295,6 +300,12 @@ func (g *Game) updateCommunityInput() {
 			g.communityView = communityImportHelp
 		}
 	case communityMyArt:
+		if communityLibraryPublishedTab().Contains(x, y) {
+			g.communityView = communityPublished
+			g.communityPage = 0
+			requestCommunityPublished()
+			return
+		}
 		if communityLibraryPacksTab().Contains(x, y) {
 			g.communityView = communityPacks
 			g.communityPage = 0
@@ -393,6 +404,12 @@ func (g *Game) updateCommunityInput() {
 			}
 		}
 	case communityPacks:
+		if communityLibraryPublishedTab().Contains(x, y) {
+			g.communityView = communityPublished
+			g.communityPage = 0
+			requestCommunityPublished()
+			return
+		}
 		if communityLibraryArtTab().Contains(x, y) {
 			g.communityView = communityMyArt
 			g.communityPage = 0
@@ -413,6 +430,30 @@ func (g *Game) updateCommunityInput() {
 			}
 			if communityPackDeleteButton(slot).Contains(x, y) {
 				g.deleteCommunityPack(slot)
+				return
+			}
+		}
+	case communityPublished:
+		if communityLibraryArtTab().Contains(x, y) {
+			g.communityView = communityMyArt
+			g.communityPage = 0
+			return
+		}
+		if communityLibraryPacksTab().Contains(x, y) {
+			g.communityView = communityPacks
+			g.communityPage = 0
+			return
+		}
+		for slot, item := range g.communityPublished {
+			if slot >= 4 {
+				break
+			}
+			if communityPublishedPinButton(slot).Contains(x, y) {
+				promoteCommunityItem(item.Kind, item.ID)
+				return
+			}
+			if communityPublishedRemoveButton(slot).Contains(x, y) {
+				unpublishCommunityItem(item.Kind, item.ID)
 				return
 			}
 		}

@@ -89,6 +89,7 @@ type Game struct {
 	selectedCreator      int
 	communityPlayReturn  communityView
 	communityGallery     []community.GalleryItem
+	communityPublished   []community.GalleryItem
 	galleryKind          string
 	gallerySort          string
 	selectedGallery      int
