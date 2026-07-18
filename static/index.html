@@ -111,6 +111,7 @@
 	window.__pendingCommunityCloudDrafts = "";
 	window.__pendingCommunityCreators = "";
 	window.__pendingCommunityGallery = "";
+	window.__pendingCommunityPublishedID = "";
 	const communitySessionKey = "pixaross.community.session";
 	const communityConfig = () => ({
 	  url: String(window.SUPABASE_URL || "").replace(/\/$/, ""),
@@ -129,6 +130,11 @@
 	  const result = window.__pendingCommunityResult || "";
 	  window.__pendingCommunityResult = "";
 	  return result;
+	};
+	window.takeCommunityPublishedID = () => {
+	  const id = window.__pendingCommunityPublishedID || "";
+	  window.__pendingCommunityPublishedID = "";
+	  return id;
 	};
 	const hashParams = new URLSearchParams(location.hash.replace(/^#/, ""));
 	if (hashParams.get("access_token")) {
@@ -205,6 +211,8 @@
 	    });
 	    const body = await response.json();
 	    if (!response.ok) throw new Error(body.message || body.hint || "Publish failed");
+	    window.__pendingCommunityPublishedID = draft.id;
+	    window.requestCommunityGallery?.("art", window.__communityGallerySort || "new");
 	    setCommunityResult(official ? "published and sent for main-game review" : "level published");
 	  } catch (error) {
 	    setCommunityResult(error.message || "publish failed");
@@ -324,10 +332,12 @@
 	  const session = readCommunitySession();
 	  if (!url || !key || !session?.access_token) return;
 	  try {
-	    await fetch(`${url}/rest/v1/rpc/save_creator_profile`, {
+	    const response = await fetch(`${url}/rest/v1/rpc/save_creator_profile`, {
 	      method: "POST", headers: communityHeaders(session.access_token),
 	      body: JSON.stringify({ p_avatar_puzzle: JSON.parse(raw) })
 	    });
+	    if (!response.ok) throw new Error((await response.json()).message || "Profile sync failed");
+	    window.requestCommunityCreators?.();
 	  } catch (_) {
 	    // The local badge remains available while offline.
 	  }

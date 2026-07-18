@@ -178,6 +178,9 @@ func (g *Game) updateMainMenuInput() {
 }
 
 func (g *Game) updateCommunityInput() {
+	if id := takeCommunityPublishedID(); id != "" {
+		g.markCommunityDraftPublished(id)
+	}
 	if raw := takeCommunityGallery(); raw != "" {
 		if err := g.loadCommunityGallery(raw); err != nil {
 			g.showCommunityNotice("could not load gallery")
@@ -260,6 +263,7 @@ func (g *Game) updateCommunityInput() {
 			g.communityView = communityCreators
 			g.selectedCreator = -1
 			g.communityPage = 0
+			g.syncCommunityProfileArt()
 			requestCommunityCreators()
 		}
 	case communityCreate:

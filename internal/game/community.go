@@ -83,6 +83,15 @@ func (g *Game) closeProfileEditor(save bool) {
 	g.mode = screenCommunity
 }
 
+func (g *Game) syncCommunityProfileArt() {
+	if !communitySignedIn() {
+		return
+	}
+	if raw, err := json.Marshal(g.profileArt.puzzle()); err == nil {
+		syncCommunityProfile(string(raw))
+	}
+}
+
 func (g *Game) editCommunityDraft(index int) {
 	if index < 0 || index >= len(g.communityLibrary.Drafts) {
 		return
@@ -222,6 +231,20 @@ func (g *Game) publishCommunityDraft(index int) {
 	raw, err := json.Marshal(draft)
 	if err != nil || !requestCommunityPublish(string(raw)) {
 		g.showCommunityNotice("publishing is available in the web build")
+	}
+}
+
+func (g *Game) markCommunityDraftPublished(id string) {
+	for i := range g.communityLibrary.Drafts {
+		if g.communityLibrary.Drafts[i].ID != id {
+			continue
+		}
+		g.communityLibrary.Drafts[i].Status = community.LevelPublishedStatus
+		g.communityLibrary.Drafts[i].Visibility = community.VisibilityPublic
+		g.communityLibrary.Drafts[i].Version++
+		g.communityLibrary.Drafts[i].UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+		g.saveCommunityLibrary()
+		return
 	}
 }
 

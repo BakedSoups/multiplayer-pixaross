@@ -145,6 +145,7 @@ func New(puzzlePath string) (*Game, error) {
 		editorLastY:      -1,
 	}
 	g.sparkles = makeSparkles()
+	g.syncCommunityProfileArt()
 	return g, nil
 }
 

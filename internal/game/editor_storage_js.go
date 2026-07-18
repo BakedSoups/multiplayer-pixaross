@@ -147,6 +147,18 @@ func takeCommunityResult() string {
 	return value.String()
 }
 
+func takeCommunityPublishedID() string {
+	fn := js.Global().Get("takeCommunityPublishedID")
+	if fn.IsUndefined() || fn.IsNull() {
+		return ""
+	}
+	value := fn.Invoke()
+	if value.IsUndefined() || value.IsNull() {
+		return ""
+	}
+	return value.String()
+}
+
 func requestCommunityCatalog(kind string) bool {
 	fn := js.Global().Get("requestCommunityCatalog")
 	if fn.IsUndefined() || fn.IsNull() {

@@ -30,6 +30,8 @@ func requestCommunityPackPublish(string) bool { return false }
 
 func takeCommunityResult() string { return "" }
 
+func takeCommunityPublishedID() string { return "" }
+
 func requestCommunityCatalog(string) bool { return false }
 
 func takeCommunityCatalog() string { return "" }

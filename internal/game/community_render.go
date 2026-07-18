@@ -379,9 +379,9 @@ func (g *Game) drawCommunityMyArt(screen *ebiten.Image) {
 			title = title[:24]
 		}
 		drawText(screen, title, int(r.x+8), int(r.y+16), colInk)
-		status := "draft"
-		if draft.Playtested {
-			status = "tested"
+		status := string(draft.Status)
+		if status == "" {
+			status = "draft"
 		}
 		drawText(screen, fmt.Sprintf("%dx%d %s", draft.Puzzle.Width, draft.Puzzle.Height, status), int(r.x+116), int(r.y+43), colMuted)
 		drawButton(screen, communityDraftEditButton(slot), "edit")
