@@ -112,6 +112,7 @@
 	window.__pendingCommunityCreators = "";
 	window.__pendingCommunityGallery = "";
 	window.__pendingCommunityPublishedID = "";
+	window.__pendingCommunityPublishedPackID = "";
 	const communitySessionKey = "pixaross.community.session";
 	const communityConfig = () => ({
 	  url: String(window.SUPABASE_URL || "").replace(/\/$/, ""),
@@ -134,6 +135,11 @@
 	window.takeCommunityPublishedID = () => {
 	  const id = window.__pendingCommunityPublishedID || "";
 	  window.__pendingCommunityPublishedID = "";
+	  return id;
+	};
+	window.takeCommunityPublishedPackID = () => {
+	  const id = window.__pendingCommunityPublishedPackID || "";
+	  window.__pendingCommunityPublishedPackID = "";
 	  return id;
 	};
 	const hashParams = new URLSearchParams(location.hash.replace(/^#/, ""));
@@ -175,7 +181,6 @@
 	};
 	window.communityAccountLabel = () => readCommunitySession()?.access_token ? "Account" : "Sign in";
 	window.communitySignedIn = () => Boolean(readCommunitySession()?.access_token);
-	window.confirmCommunityDelete = (kind, title) => confirm(`Delete ${kind} "${title}"? This cannot be undone.`);
 	window.requestCommunityPublish = async (raw) => {
 	  const { url, key } = communityConfig();
 	  if (!url || !key) return setCommunityResult("community cloud is not configured yet");
@@ -186,35 +191,24 @@
 	  }
 	  try {
 	    const draft = JSON.parse(raw);
-	    const title = prompt("Level title:", draft.title || "Untitled");
-	    if (!title) return setCommunityResult("publish cancelled");
-	    const description = prompt("Short description (optional):", draft.description || "") || "";
-	    const tags = (prompt("Tags, separated by commas (optional):", (draft.tags || []).join(", ")) || "")
-	      .split(",").map((tag) => tag.trim()).filter(Boolean).slice(0, 8);
-	    const official = confirm("Would you like this level to be considered for the main game? It will be inspected and may or may not be approved.");
-	    let rightsConfirmed = false;
-	    if (official) {
-	      rightsConfirmed = confirm("Confirm that you created this art or have the rights to submit it for inclusion in the game.");
-	      if (!rightsConfirmed) return setCommunityResult("submission cancelled: rights confirmation is required");
-	    }
 	    const response = await fetch(`${url}/rest/v1/rpc/publish_level`, {
 	      method: "POST",
 	      headers: communityHeaders(session.access_token),
 	      body: JSON.stringify({
 	        p_local_id: draft.id,
-	        p_title: title,
-	        p_description: description,
-	        p_tags: tags,
+	        p_title: draft.title || "Untitled",
+	        p_description: draft.description || "",
+	        p_tags: (draft.tags || []).slice(0, 8),
 	        p_puzzle: draft.puzzle,
-	        p_submit_official: official,
-	        p_rights_confirmed: rightsConfirmed
+	        p_submit_official: false,
+	        p_rights_confirmed: false
 	      })
 	    });
 	    const body = await response.json();
 	    if (!response.ok) throw new Error(body.message || body.hint || "Publish failed");
 	    window.__pendingCommunityPublishedID = draft.id;
 	    window.requestCommunityGallery?.("art", window.__communityGallerySort || "new");
-	    setCommunityResult(official ? "published and sent for main-game review" : "level published");
+	    setCommunityResult("level published");
 	  } catch (error) {
 	    setCommunityResult(error.message || "publish failed");
 	  }
@@ -226,16 +220,15 @@
 	  if (!session?.access_token) return setCommunityResult("sign in and publish each level before publishing a pack");
 	  try {
 	    const pack = JSON.parse(raw);
-	    const title = prompt("Pack title:", pack.title || "My Pack");
-	    if (!title) return;
-	    const description = prompt("Short pack description (optional):", pack.description || "") || "";
 	    const response = await fetch(`${url}/rest/v1/rpc/publish_pack`, {
 	      method: "POST",
 	      headers: communityHeaders(session.access_token),
-	      body: JSON.stringify({ p_title: title, p_description: description, p_level_local_ids: (pack.items || []).map((item) => item.levelId) })
+	      body: JSON.stringify({ p_title: pack.title || "My Pack", p_description: pack.description || "", p_level_local_ids: (pack.items || []).map((item) => item.levelId) })
 	    });
 	    const body = await response.json();
 	    if (!response.ok) throw new Error(body.message || body.hint || "Pack publish failed");
+	    window.__pendingCommunityPublishedPackID = pack.id;
+	    window.requestCommunityGallery?.("pack", window.__communityGallerySort || "new");
 	    setCommunityResult("pack published");
 	  } catch (error) {
 	    setCommunityResult(error.message || "pack publish failed");

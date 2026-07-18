@@ -48,11 +48,6 @@ func communitySignedIn() bool {
 	return !fn.IsUndefined() && !fn.IsNull() && fn.Invoke().Bool()
 }
 
-func confirmCommunityDelete(kind, title string) bool {
-	fn := js.Global().Get("confirmCommunityDelete")
-	return !fn.IsUndefined() && !fn.IsNull() && fn.Invoke(kind, title).Bool()
-}
-
 func saveCommunityData(raw string) bool {
 	storage := js.Global().Get("localStorage")
 	if storage.IsUndefined() || storage.IsNull() {
@@ -154,6 +149,18 @@ func takeCommunityResult() string {
 
 func takeCommunityPublishedID() string {
 	fn := js.Global().Get("takeCommunityPublishedID")
+	if fn.IsUndefined() || fn.IsNull() {
+		return ""
+	}
+	value := fn.Invoke()
+	if value.IsUndefined() || value.IsNull() {
+		return ""
+	}
+	return value.String()
+}
+
+func takeCommunityPublishedPackID() string {
+	fn := js.Global().Get("takeCommunityPublishedPackID")
 	if fn.IsUndefined() || fn.IsNull() {
 		return ""
 	}

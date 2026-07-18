@@ -257,7 +257,7 @@ func (g *Game) deleteCommunityDraft(index int) {
 			}
 		}
 	}
-	if !confirmCommunityDelete("art", draft.Title) {
+	if !g.confirmCommunityDelete("art", draft.ID, draft.Title) {
 		return
 	}
 	g.communityLibrary.Drafts = append(g.communityLibrary.Drafts[:index], g.communityLibrary.Drafts[index+1:]...)
@@ -273,12 +273,26 @@ func (g *Game) deleteCommunityPack(index int) {
 		return
 	}
 	pack := g.communityLibrary.Packs[index]
-	if !confirmCommunityDelete("pack", pack.Title) {
+	if !g.confirmCommunityDelete("pack", pack.ID, pack.Title) {
 		return
 	}
 	g.communityLibrary.Packs = append(g.communityLibrary.Packs[:index], g.communityLibrary.Packs[index+1:]...)
 	g.saveCommunityLibrary()
 	g.showCommunityNotice("pack deleted")
+}
+
+func (g *Game) confirmCommunityDelete(kind, id, title string) bool {
+	now := time.Now()
+	if g.pendingDeleteKind == kind && g.pendingDeleteID == id && now.Before(g.pendingDeleteUntil) {
+		g.pendingDeleteKind = ""
+		g.pendingDeleteID = ""
+		return true
+	}
+	g.pendingDeleteKind = kind
+	g.pendingDeleteID = id
+	g.pendingDeleteUntil = now.Add(4 * time.Second)
+	g.showCommunityNotice("click x again to delete " + title)
+	return false
 }
 
 func (g *Game) markCommunityDraftPublished(id string) {
@@ -496,7 +510,7 @@ func (g *Game) togglePackDraft(index int) {
 	}
 }
 
-func (g *Game) publishLocalPack(index int) {
+func (g *Game) queueLocalPackPublish(index int) {
 	if index < 0 || index >= len(g.communityLibrary.Packs) {
 		return
 	}
@@ -510,9 +524,38 @@ func (g *Game) publishLocalPack(index int) {
 		g.showCommunityNotice("sign in to publish")
 		return
 	}
+	g.pendingPackPublishID = pack.ID
+	g.pendingPackPublishAt = time.Now().Add(100 * time.Millisecond)
+	g.showCommunityNotice("publishing " + pack.Title + "...")
+}
+
+func (g *Game) publishLocalPack(id string) {
+	var pack *community.Pack
+	for i := range g.communityLibrary.Packs {
+		if g.communityLibrary.Packs[i].ID == id {
+			pack = &g.communityLibrary.Packs[i]
+			break
+		}
+	}
+	if pack == nil {
+		return
+	}
 	raw, err := json.Marshal(pack)
 	if err != nil || !requestCommunityPackPublish(string(raw)) {
 		g.showCommunityNotice("pack publishing is available in the web build")
+	}
+}
+
+func (g *Game) markCommunityPackPublished(id string) {
+	for i := range g.communityLibrary.Packs {
+		if g.communityLibrary.Packs[i].ID != id {
+			continue
+		}
+		g.communityLibrary.Packs[i].Status = community.LevelPublishedStatus
+		g.communityLibrary.Packs[i].Visibility = community.VisibilityPublic
+		g.communityLibrary.Packs[i].UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+		g.saveCommunityLibrary()
+		return
 	}
 }
 

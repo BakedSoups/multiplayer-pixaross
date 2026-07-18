@@ -94,6 +94,11 @@ type Game struct {
 	selectedGallery      int
 	pendingPublishID     string
 	pendingPublishAt     time.Time
+	pendingPackPublishID string
+	pendingPackPublishAt time.Time
+	pendingDeleteKind    string
+	pendingDeleteID      string
+	pendingDeleteUntil   time.Time
 	communityNotice      string
 	communityNoticeUntil time.Time
 }

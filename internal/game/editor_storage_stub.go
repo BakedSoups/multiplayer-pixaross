@@ -10,8 +10,6 @@ func communityAccountLabel() string { return "Sign in" }
 
 func communitySignedIn() bool { return false }
 
-func confirmCommunityDelete(string, string) bool { return true }
-
 func saveCommunityData(string) bool { return false }
 
 func loadCommunityData() string { return "" }
@@ -33,6 +31,8 @@ func requestCommunityPackPublish(string) bool { return false }
 func takeCommunityResult() string { return "" }
 
 func takeCommunityPublishedID() string { return "" }
+
+func takeCommunityPublishedPackID() string { return "" }
 
 func requestCommunityCatalog(string) bool { return false }
 

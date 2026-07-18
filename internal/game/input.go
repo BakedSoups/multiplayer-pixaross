@@ -178,6 +178,12 @@ func (g *Game) updateMainMenuInput() {
 }
 
 func (g *Game) updateCommunityInput() {
+	if g.pendingPackPublishID != "" && !time.Now().Before(g.pendingPackPublishAt) {
+		id := g.pendingPackPublishID
+		g.pendingPackPublishID = ""
+		g.publishLocalPack(id)
+		return
+	}
 	if g.pendingPublishID != "" && !time.Now().Before(g.pendingPublishAt) {
 		id := g.pendingPublishID
 		g.pendingPublishID = ""
@@ -186,6 +192,9 @@ func (g *Game) updateCommunityInput() {
 	}
 	if id := takeCommunityPublishedID(); id != "" {
 		g.markCommunityDraftPublished(id)
+	}
+	if id := takeCommunityPublishedPackID(); id != "" {
+		g.markCommunityPackPublished(id)
 	}
 	if raw := takeCommunityGallery(); raw != "" {
 		if err := g.loadCommunityGallery(raw); err != nil {
@@ -399,7 +408,7 @@ func (g *Game) updateCommunityInput() {
 				return
 			}
 			if communityPackPublishButton(slot).Contains(x, y) {
-				g.publishLocalPack(slot)
+				g.queueLocalPackPublish(slot)
 				return
 			}
 			if communityPackDeleteButton(slot).Contains(x, y) {

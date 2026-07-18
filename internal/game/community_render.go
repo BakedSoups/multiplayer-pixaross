@@ -145,7 +145,14 @@ func (g *Game) drawCommunityPacks(screen *ebiten.Image) {
 			title = title[:10]
 		}
 		drawText(screen, title, int(r.x+10), int(r.y+20), colInk)
-		drawText(screen, fmt.Sprintf("%d art", len(pack.Items)), int(r.x+10), int(r.y+44), colMuted)
+		packStatus := fmt.Sprintf("%d art", len(pack.Items))
+		if string(pack.Status) == "published" {
+			packStatus = "published"
+		}
+		if g.pendingPackPublishID == pack.ID {
+			packStatus = "publishing"
+		}
+		drawText(screen, packStatus, int(r.x+10), int(r.y+44), colMuted)
 		for art, item := range pack.Items {
 			if art >= 20 {
 				break
@@ -154,10 +161,14 @@ func (g *Game) drawCommunityPacks(screen *ebiten.Image) {
 			if !ok || draft.Puzzle == nil {
 				continue
 			}
-			drawCommunityArtThumbnail(screen, draft.Puzzle.RevealRaw, communityPackArtPreview(i, art))
+			drawCommunityArtThumbnail(screen, draft.Puzzle.RevealRaw, communityPackArtPreview(i, art, len(pack.Items)))
 		}
 		drawButton(screen, communityPackPlayButton(i), "play")
-		drawButton(screen, communityPackPublishButton(i), "publish")
+		publishLabel := "publish"
+		if g.pendingPackPublishID == pack.ID {
+			publishLabel = "..."
+		}
+		drawButton(screen, communityPackPublishButton(i), publishLabel)
 		drawButton(screen, communityPackDeleteButton(i), "x")
 	}
 }
@@ -526,8 +537,11 @@ func communityCreatorLevelButtonAt(slot int, y float64) rect {
 }
 func communityPackCreateButton() rect { return rect{x: 154, y: 270, w: 232, h: 38} }
 func communityPackRect(slot int) rect { return rect{x: 44, y: 318 + float64(slot)*70, w: 452, h: 64} }
-func communityPackArtPreview(slot, art int) rect {
+func communityPackArtPreview(slot, art, count int) rect {
 	r := communityPackRect(slot)
+	if count <= 5 {
+		return rect{x: r.x + 104 + float64(art)*31, y: r.y + 17, w: 28, h: 28}
+	}
 	column := art % 10
 	row := art / 10
 	return rect{x: r.x + 104 + float64(column)*17, y: r.y + 9 + float64(row)*25, w: 16, h: 16}
