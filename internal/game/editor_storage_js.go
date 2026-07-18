@@ -117,12 +117,12 @@ func requestCommunityGoogleSignIn() bool {
 	return true
 }
 
-func requestCommunityPublish(raw string) bool {
+func requestCommunityPublish(raw string, submitOfficial, rightsConfirmed bool) bool {
 	fn := js.Global().Get("requestCommunityPublish")
 	if fn.IsUndefined() || fn.IsNull() {
 		return false
 	}
-	fn.Invoke(raw)
+	fn.Invoke(raw, submitOfficial, rightsConfirmed)
 	return true
 }
 

@@ -78,30 +78,37 @@ type Game struct {
 	profileDraftID   string
 	editingProfile   bool
 
-	communityLibrary     community.Library
-	communityView        communityView
-	communityPage        int
-	communityCatalog     []community.LevelVersion
-	activeCommunityPack  string
-	packSelection        map[string]bool
-	communityEmail       string
-	communityCreators    []community.CreatorProfile
-	selectedCreator      int
-	communityPlayReturn  communityView
-	communityGallery     []community.GalleryItem
-	communityPublished   []community.GalleryItem
-	galleryKind          string
-	gallerySort          string
-	selectedGallery      int
-	pendingPublishID     string
-	pendingPublishAt     time.Time
-	pendingPackPublishID string
-	pendingPackPublishAt time.Time
-	pendingDeleteKind    string
-	pendingDeleteID      string
-	pendingDeleteUntil   time.Time
-	communityNotice      string
-	communityNoticeUntil time.Time
+	communityLibrary       community.Library
+	communityView          communityView
+	communityPage          int
+	communityCatalog       []community.LevelVersion
+	activeCommunityPack    string
+	packSelection          map[string]bool
+	communityEmail         string
+	communityCreators      []community.CreatorProfile
+	selectedCreator        int
+	communityPlayReturn    communityView
+	communityGallery       []community.GalleryItem
+	communityPublished     []community.GalleryItem
+	galleryKind            string
+	gallerySort            string
+	selectedGallery        int
+	pendingPublishID       string
+	pendingPublishAt       time.Time
+	pendingPackPublishID   string
+	pendingPackPublishAt   time.Time
+	pendingDeleteKind      string
+	pendingDeleteID        string
+	pendingDeleteUntil     time.Time
+	publishDraftID         string
+	publishTitle           string
+	publishDescription     string
+	publishTags            string
+	publishField           int
+	publishSubmitOfficial  bool
+	publishRightsConfirmed bool
+	communityNotice        string
+	communityNoticeUntil   time.Time
 }
 
 type sparkle struct {

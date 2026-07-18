@@ -45,6 +45,8 @@ func (g *Game) drawCommunity(screen *ebiten.Image) {
 		g.drawCommunityImportHelp(screen)
 	case communityPublished:
 		g.drawCommunityPublished(screen)
+	case communityPublishSetup:
+		g.drawCommunityPublishSetup(screen)
 	default:
 		g.drawCommunityHome(screen)
 	}
@@ -542,6 +544,46 @@ func (g *Game) drawCommunityPublished(screen *ebiten.Image) {
 	}
 }
 
+func (g *Game) drawCommunityPublishSetup(screen *ebiten.Image) {
+	draft, ok := g.communityLibrary.Draft(g.publishDraftID)
+	if !ok {
+		return
+	}
+	drawCenteredText(screen, "PUBLISH ART", rect{x: 80, y: 190, w: 380, h: 30}, colInk)
+	drawCommunityArtThumbnail(screen, draft.Puzzle.SkeletonRaw, rect{x: 52, y: 238, w: 94, h: 94})
+	drawCommunityArtThumbnail(screen, draft.Puzzle.RevealRaw, rect{x: 154, y: 238, w: 94, h: 94})
+	drawPublishField(screen, communityPublishTitleField(), "Name", g.publishTitle, g.publishField == 0)
+	drawPublishField(screen, communityPublishDescriptionField(), "Description", g.publishDescription, g.publishField == 1)
+	drawPublishField(screen, communityPublishTagsField(), "Tags", g.publishTags, g.publishField == 2)
+	drawButton(screen, communityPublishOfficialButton(), checkboxLabel(g.publishSubmitOfficial, "Main game review"))
+	if g.publishSubmitOfficial {
+		drawButton(screen, communityPublishRightsButton(), checkboxLabel(g.publishRightsConfirmed, "I own this art"))
+	}
+	drawButton(screen, communityPublishConfirmButton(), "Publish")
+}
+
+func drawPublishField(screen *ebiten.Image, r rect, label, value string, active bool) {
+	drawText(screen, label, int(r.x), int(r.y-8), colMuted)
+	drawRounded(screen, r, 4, colWhite)
+	drawRectOutline(screen, r, 2, colGridHeavy)
+	if active {
+		drawRectOutline(screen, r, 2, colAccent)
+	}
+	shown := value
+	max := int((r.w - 16) / 8)
+	if len(shown) > max {
+		shown = shown[len(shown)-max:]
+	}
+	drawText(screen, shown, int(r.x+8), int(r.y+25), colInk)
+}
+
+func checkboxLabel(checked bool, text string) string {
+	if checked {
+		return "x  " + text
+	}
+	return "o  " + text
+}
+
 func drawCommunityArtThumbnail(screen *ebiten.Image, pixels [][]string, frame rect) {
 	drawRounded(screen, frame, 4, colPanel)
 	drawRectOutline(screen, frame, 2, colGridHeavy)
@@ -598,7 +640,13 @@ func communityPublishedRemoveButton(slot int) rect {
 	r := communityPublishedRect(slot)
 	return rect{x: r.x + 344, y: r.y + 17, w: 88, h: 36}
 }
-func communityArtCreateButton() rect { return rect{x: 154, y: 270, w: 232, h: 38} }
+func communityPublishTitleField() rect       { return rect{x: 270, y: 238, w: 220, h: 40} }
+func communityPublishDescriptionField() rect { return rect{x: 270, y: 300, w: 220, h: 40} }
+func communityPublishTagsField() rect        { return rect{x: 270, y: 362, w: 220, h: 40} }
+func communityPublishOfficialButton() rect   { return rect{x: 88, y: 426, w: 364, h: 40} }
+func communityPublishRightsButton() rect     { return rect{x: 88, y: 476, w: 364, h: 40} }
+func communityPublishConfirmButton() rect    { return rect{x: 170, y: 538, w: 200, h: 44} }
+func communityArtCreateButton() rect         { return rect{x: 154, y: 270, w: 232, h: 38} }
 func communityDraftRect(slot int) rect {
 	return rect{x: 54, y: 234 + float64(slot)*88, w: 432, h: 74}
 }

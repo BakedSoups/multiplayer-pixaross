@@ -182,7 +182,7 @@
 	};
 	window.communityAccountLabel = () => readCommunitySession()?.access_token ? "Account" : "Sign in";
 	window.communitySignedIn = () => Boolean(readCommunitySession()?.access_token);
-	window.requestCommunityPublish = async (raw) => {
+	window.requestCommunityPublish = async (raw, submitOfficial, rightsConfirmed) => {
 	  const { url, key } = communityConfig();
 	  if (!url || !key) return setCommunityResult("community cloud is not configured yet");
 	  const session = readCommunitySession();
@@ -201,15 +201,15 @@
 	        p_description: draft.description || "",
 	        p_tags: (draft.tags || []).slice(0, 8),
 	        p_puzzle: draft.puzzle,
-	        p_submit_official: false,
-	        p_rights_confirmed: false
+	        p_submit_official: Boolean(submitOfficial),
+	        p_rights_confirmed: Boolean(rightsConfirmed)
 	      })
 	    });
 	    const body = await response.json();
 	    if (!response.ok) throw new Error(body.message || body.hint || "Publish failed");
 	    window.__pendingCommunityPublishedID = draft.id;
 	    window.requestCommunityGallery?.("art", window.__communityGallerySort || "new");
-	    setCommunityResult("level published");
+	    setCommunityResult(submitOfficial ? "published and sent for main-game review" : "level published");
 	  } catch (error) {
 	    setCommunityResult(error.message || "publish failed");
 	  }

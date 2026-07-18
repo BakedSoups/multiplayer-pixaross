@@ -243,6 +243,43 @@ func (g *Game) updateCommunityInput() {
 			return
 		}
 	}
+	if g.communityView == communityPublishSetup {
+		for _, char := range ebiten.AppendInputChars(nil) {
+			if char < 32 || char > 126 {
+				continue
+			}
+			switch g.publishField {
+			case 0:
+				if len(g.publishTitle) < 80 {
+					g.publishTitle += string(char)
+				}
+			case 1:
+				if len(g.publishDescription) < 160 {
+					g.publishDescription += string(char)
+				}
+			case 2:
+				if len(g.publishTags) < 100 {
+					g.publishTags += string(char)
+				}
+			}
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
+			switch g.publishField {
+			case 0:
+				if len(g.publishTitle) > 0 {
+					g.publishTitle = g.publishTitle[:len(g.publishTitle)-1]
+				}
+			case 1:
+				if len(g.publishDescription) > 0 {
+					g.publishDescription = g.publishDescription[:len(g.publishDescription)-1]
+				}
+			case 2:
+				if len(g.publishTags) > 0 {
+					g.publishTags = g.publishTags[:len(g.publishTags)-1]
+				}
+			}
+		}
+	}
 	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 		g.communityBack()
 		return
@@ -439,6 +476,24 @@ func (g *Game) updateCommunityInput() {
 			g.communityPage = 0
 			return
 		}
+	case communityPublishSetup:
+		switch {
+		case communityPublishTitleField().Contains(x, y):
+			g.publishField = 0
+		case communityPublishDescriptionField().Contains(x, y):
+			g.publishField = 1
+		case communityPublishTagsField().Contains(x, y):
+			g.publishField = 2
+		case communityPublishOfficialButton().Contains(x, y):
+			g.publishSubmitOfficial = !g.publishSubmitOfficial
+			if !g.publishSubmitOfficial {
+				g.publishRightsConfirmed = false
+			}
+		case communityPublishRightsButton().Contains(x, y) && g.publishSubmitOfficial:
+			g.publishRightsConfirmed = !g.publishRightsConfirmed
+		case communityPublishConfirmButton().Contains(x, y):
+			g.submitCommunityDraftPublish()
+		}
 		if communityLibraryPacksTab().Contains(x, y) {
 			g.communityView = communityPacks
 			g.communityPage = 0
@@ -543,6 +598,10 @@ func (g *Game) submitCommunitySignIn() {
 }
 
 func (g *Game) communityBack() {
+	if g.communityView == communityPublishSetup {
+		g.communityView = communityMyArt
+		return
+	}
 	if g.communityView == communityImportHelp {
 		g.communityView = communityCreate
 		return

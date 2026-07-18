@@ -26,6 +26,7 @@ const (
 	communityGalleryPack
 	communityImportHelp
 	communityPublished
+	communityPublishSetup
 )
 
 func loadCommunityLibrary() community.Library {
@@ -229,8 +230,43 @@ func (g *Game) queueCommunityDraftPublish(index int) {
 		g.showCommunityNotice("sign in to publish")
 		return
 	}
+	g.publishDraftID = draft.ID
+	g.publishTitle = draft.Title
+	g.publishDescription = draft.Description
+	g.publishTags = strings.Join(draft.Tags, ", ")
+	g.publishSubmitOfficial = false
+	g.publishRightsConfirmed = false
+	g.publishField = 0
+	g.communityView = communityPublishSetup
+}
+
+func (g *Game) submitCommunityDraftPublish() {
+	draft, ok := g.communityLibrary.Draft(g.publishDraftID)
+	if !ok {
+		return
+	}
+	title := strings.TrimSpace(g.publishTitle)
+	if title == "" {
+		g.showCommunityNotice("name is required")
+		return
+	}
+	if g.publishSubmitOfficial && !g.publishRightsConfirmed {
+		g.showCommunityNotice("confirm your rights first")
+		return
+	}
+	draft.Title = title
+	draft.Description = strings.TrimSpace(g.publishDescription)
+	draft.Tags = nil
+	for _, tag := range strings.Split(g.publishTags, ",") {
+		tag = strings.TrimSpace(tag)
+		if tag != "" && len(draft.Tags) < 8 {
+			draft.Tags = append(draft.Tags, tag)
+		}
+	}
+	g.saveCommunityLibrary()
 	g.pendingPublishID = draft.ID
 	g.pendingPublishAt = time.Now().Add(100 * time.Millisecond)
+	g.communityView = communityMyArt
 	g.showCommunityNotice("publishing " + draft.Title + "...")
 }
 
@@ -240,7 +276,7 @@ func (g *Game) publishCommunityDraft(id string) {
 		return
 	}
 	raw, err := json.Marshal(draft)
-	if err != nil || !requestCommunityPublish(string(raw)) {
+	if err != nil || !requestCommunityPublish(string(raw), g.publishSubmitOfficial, g.publishRightsConfirmed) {
 		g.showCommunityNotice("publishing is available in the web build")
 	}
 }
