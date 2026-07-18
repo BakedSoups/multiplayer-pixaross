@@ -218,7 +218,7 @@
 	};
 	window.communityAccountLabel = () => readCommunitySession()?.access_token ? "Account" : "Sign in";
 	window.communitySignedIn = () => Boolean(readCommunitySession()?.access_token);
-	window.requestCommunityPublish = async (raw, submitOfficial, rightsConfirmed) => {
+	window.requestCommunityPublish = async (raw, submitOfficial, rightsConfirmed, previewRaw) => {
 	  const { url, key } = communityConfig();
 	  if (!url || !key) return setCommunityResult("community cloud is not configured yet");
 	  const session = await validCommunitySession().catch((error) => { setCommunityResult(error.message); return null; });
@@ -243,6 +243,13 @@
 	    });
 	    const body = await response.json();
 	    if (!response.ok) throw new Error(body.message || body.hint || "Publish failed");
+	    if (previewRaw) {
+	      const previewResponse = await fetch(`${url}/rest/v1/rpc/set_content_preview`, {
+	        method: "POST", headers: communityHeaders(session.access_token),
+	        body: JSON.stringify({ p_kind: "art", p_content_id: body.levelId, p_preview_pixels: JSON.parse(previewRaw) })
+	      });
+	      if (!previewResponse.ok) throw new Error((await previewResponse.json()).message || "Cover upload failed");
+	    }
 	    window.__pendingCommunityPublishedID = draft.id;
 	    window.requestCommunityGallery?.(window.__communityGalleryKind || "all", window.__communityGallerySort || "new");
 	    setCommunityResult(submitOfficial ? "published and sent for main-game review" : "level published");
@@ -250,13 +257,26 @@
 	    setCommunityResult(error.message || "publish failed");
 	  }
 	};
-	window.requestCommunityPackPublish = async (raw) => {
+	window.requestCommunityPackPublish = async (raw, previewRaw) => {
 	  const { url, key } = communityConfig();
 	  if (!url || !key) return setCommunityResult("community cloud is not configured yet");
 	  const session = await validCommunitySession().catch((error) => { setCommunityResult(error.message); return null; });
 	  if (!session?.access_token) return setCommunityResult("sign in and publish each level before publishing a pack");
 	  try {
-	    const pack = JSON.parse(raw);
+	    const payload = JSON.parse(raw);
+	    const pack = payload.pack || payload;
+	    for (const draft of (payload.drafts || [])) {
+	      const levelResponse = await fetch(`${url}/rest/v1/rpc/publish_level`, {
+	        method: "POST", headers: communityHeaders(session.access_token),
+	        body: JSON.stringify({
+	          p_local_id: draft.id, p_title: draft.title || "Untitled",
+	          p_description: draft.description || "", p_tags: (draft.tags || []).slice(0, 8),
+	          p_puzzle: draft.puzzle, p_submit_official: false, p_rights_confirmed: false
+	        })
+	      });
+	      const levelBody = await levelResponse.json();
+	      if (!levelResponse.ok) throw new Error(levelBody.message || `Could not publish ${draft.title || "pack level"}`);
+	    }
 	    const response = await fetch(`${url}/rest/v1/rpc/publish_pack`, {
 	      method: "POST",
 	      headers: communityHeaders(session.access_token),
@@ -264,6 +284,13 @@
 	    });
 	    const body = await response.json();
 	    if (!response.ok) throw new Error(body.message || body.hint || "Pack publish failed");
+	    if (previewRaw) {
+	      const previewResponse = await fetch(`${url}/rest/v1/rpc/set_content_preview`, {
+	        method: "POST", headers: communityHeaders(session.access_token),
+	        body: JSON.stringify({ p_kind: "pack", p_content_id: body.packId, p_preview_pixels: JSON.parse(previewRaw) })
+	      });
+	      if (!previewResponse.ok) throw new Error((await previewResponse.json()).message || "Cover upload failed");
+	    }
 	    window.__pendingCommunityPublishedPackID = pack.id;
 	    window.requestCommunityGallery?.(window.__communityGalleryKind || "all", window.__communityGallerySort || "new");
 	    setCommunityResult("pack published");
@@ -639,6 +666,44 @@
       };
       input.click();
     };
+	window.takeCommunityCoverImport = () => {
+	  const value = window.__pendingCommunityCoverImport || "";
+	  window.__pendingCommunityCoverImport = "";
+	  return value;
+	};
+	window.requestCommunityCoverImport = (size) => {
+	  const input = document.createElement("input");
+	  input.type = "file";
+	  input.accept = "image/png,image/jpeg,image/webp,image/gif";
+	  input.onchange = () => {
+	    const file = input.files && input.files[0];
+	    if (!file) return;
+	    const image = new Image();
+	    image.onload = () => {
+	      const side = Math.max(8, Number(size) || 10);
+	      const canvas = document.createElement("canvas");
+	      canvas.width = side; canvas.height = side;
+	      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+	      ctx.imageSmoothingEnabled = false;
+	      const crop = Math.min(image.width, image.height);
+	      ctx.drawImage(image, (image.width-crop)/2, (image.height-crop)/2, crop, crop, 0, 0, side, side);
+	      const data = ctx.getImageData(0, 0, side, side).data;
+	      const rows = [];
+	      for (let y=0; y<side; y++) {
+	        const row = [];
+	        for (let x=0; x<side; x++) {
+	          const i=(y*side+x)*4;
+	          row.push(data[i+3] ? `#${[data[i],data[i+1],data[i+2],data[i+3]].map(v=>v.toString(16).padStart(2,"0")).join("")}` : "");
+	        }
+	        rows.push(row);
+	      }
+	      window.__pendingCommunityCoverImport = JSON.stringify(rows);
+	      URL.revokeObjectURL(image.src);
+	    };
+	    image.src = URL.createObjectURL(file);
+	  };
+	  input.click();
+	};
 	window.takeEditorTitle = () => {
 	  const title = window.__pendingEditorTitle || "";
 	  window.__pendingEditorTitle = "";

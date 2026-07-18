@@ -284,6 +284,7 @@ func (g *Game) queueCommunityDraftPublish(index int) {
 	g.publishTags = strings.Join(draft.Tags, ", ")
 	g.publishSubmitOfficial = false
 	g.publishRightsConfirmed = false
+	g.publishPreviewRaw = nil
 	g.publishField = 0
 	g.communityView = communityPublishSetup
 }
@@ -324,7 +325,13 @@ func (g *Game) publishCommunityDraft(id string) {
 		return
 	}
 	raw, err := json.Marshal(draft)
-	if err != nil || !requestCommunityPublish(string(raw), g.publishSubmitOfficial, g.publishRightsConfirmed) {
+	preview := ""
+	if len(g.publishPreviewRaw) > 0 {
+		if encoded, encodeErr := json.Marshal(g.publishPreviewRaw); encodeErr == nil {
+			preview = string(encoded)
+		}
+	}
+	if err != nil || !requestCommunityPublish(string(raw), g.publishSubmitOfficial, g.publishRightsConfirmed, preview) {
 		g.showCommunityNotice("publishing is available in the web build")
 	}
 }
@@ -575,6 +582,7 @@ func (g *Game) openNewPackSetup() {
 	g.packSetupDescription = ""
 	g.packSetupItems = items
 	g.packSetupPreview = 0
+	g.packSetupPreviewRaw = nil
 	g.packSetupField = 0
 	g.packSelection = nil
 	g.communityView = communityPackSetup
@@ -612,6 +620,7 @@ func (g *Game) queueLocalPackPublish(index int) {
 	g.packSetupDescription = pack.Description
 	g.packSetupItems = append([]community.PackItem(nil), pack.Items...)
 	g.packSetupPreview = 0
+	g.packSetupPreviewRaw = nil
 	g.packSetupField = 0
 	g.communityView = communityPackSetup
 }
@@ -678,8 +687,23 @@ func (g *Game) publishLocalPack(id string) {
 	if pack == nil {
 		return
 	}
-	raw, err := json.Marshal(pack)
-	if err != nil || !requestCommunityPackPublish(string(raw)) {
+	drafts := make([]community.LevelDraft, 0, len(pack.Items))
+	for _, item := range pack.Items {
+		if draft, ok := g.communityLibrary.Draft(item.LevelID); ok {
+			drafts = append(drafts, *draft)
+		}
+	}
+	raw, err := json.Marshal(struct {
+		Pack   *community.Pack        `json:"pack"`
+		Drafts []community.LevelDraft `json:"drafts"`
+	}{Pack: pack, Drafts: drafts})
+	preview := ""
+	if len(g.packSetupPreviewRaw) > 0 {
+		if encoded, encodeErr := json.Marshal(g.packSetupPreviewRaw); encodeErr == nil {
+			preview = string(encoded)
+		}
+	}
+	if err != nil || !requestCommunityPackPublish(string(raw), preview) {
 		g.showCommunityNotice("pack publishing is available in the web build")
 	}
 }

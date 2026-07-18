@@ -112,6 +112,7 @@ type Game struct {
 	publishField           int
 	publishSubmitOfficial  bool
 	publishRightsConfirmed bool
+	publishPreviewRaw      [][]string
 	communityImportRaw     string
 	communityImportPack    editorPack
 	newArtTitle            string
@@ -122,6 +123,7 @@ type Game struct {
 	packSetupDescription   string
 	packSetupItems         []community.PackItem
 	packSetupPreview       int
+	packSetupPreviewRaw    [][]string
 	packSetupField         int
 	communityNotice        string
 	communityNoticeUntil   time.Time

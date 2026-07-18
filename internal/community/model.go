@@ -78,6 +78,7 @@ type GalleryItem struct {
 	Liked        bool             `json:"liked"`
 	Owned        bool             `json:"owned"`
 	Promoted     bool             `json:"promoted"`
+	PreviewRaw   [][]string       `json:"previewPixels,omitempty"`
 	Puzzle       *nonogram.Puzzle `json:"puzzle,omitempty"`
 	Levels       []LevelVersion   `json:"levels,omitempty"`
 	PublishedAt  string           `json:"publishedAt"`

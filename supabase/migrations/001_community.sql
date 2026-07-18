@@ -36,6 +36,7 @@ create table public.levels (
   visibility public.content_visibility not null default 'public',
   status public.content_status not null default 'published',
   current_version integer not null default 1 check (current_version > 0),
+  preview_pixels jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (owner_id, local_id)
@@ -62,6 +63,7 @@ create table public.packs (
   visibility public.content_visibility not null default 'public',
   status public.content_status not null default 'published',
   current_version integer not null default 1,
+  preview_pixels jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

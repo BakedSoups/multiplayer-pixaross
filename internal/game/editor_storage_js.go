@@ -139,21 +139,21 @@ func requestCommunityGoogleSignIn() bool {
 	return true
 }
 
-func requestCommunityPublish(raw string, submitOfficial, rightsConfirmed bool) bool {
+func requestCommunityPublish(raw string, submitOfficial, rightsConfirmed bool, preview string) bool {
 	fn := js.Global().Get("requestCommunityPublish")
 	if fn.IsUndefined() || fn.IsNull() {
 		return false
 	}
-	fn.Invoke(raw, submitOfficial, rightsConfirmed)
+	fn.Invoke(raw, submitOfficial, rightsConfirmed, preview)
 	return true
 }
 
-func requestCommunityPackPublish(raw string) bool {
+func requestCommunityPackPublish(raw, preview string) bool {
 	fn := js.Global().Get("requestCommunityPackPublish")
 	if fn.IsUndefined() || fn.IsNull() {
 		return false
 	}
-	fn.Invoke(raw)
+	fn.Invoke(raw, preview)
 	return true
 }
 
@@ -429,6 +429,27 @@ func requestEditorTitle(current string) bool {
 
 func takeEditorTitle() string {
 	fn := js.Global().Get("takeEditorTitle")
+	if fn.IsUndefined() || fn.IsNull() {
+		return ""
+	}
+	value := fn.Invoke()
+	if value.IsUndefined() || value.IsNull() {
+		return ""
+	}
+	return value.String()
+}
+
+func requestCommunityCoverImport(size int) bool {
+	fn := js.Global().Get("requestCommunityCoverImport")
+	if fn.IsUndefined() || fn.IsNull() {
+		return false
+	}
+	fn.Invoke(size)
+	return true
+}
+
+func takeCommunityCoverImport() string {
+	fn := js.Global().Get("takeCommunityCoverImport")
 	if fn.IsUndefined() || fn.IsNull() {
 		return ""
 	}

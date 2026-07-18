@@ -28,9 +28,9 @@ func requestCommunitySignOut() bool { return false }
 
 func requestCommunityGoogleSignIn() bool { return false }
 
-func requestCommunityPublish(string, bool, bool) bool { return false }
+func requestCommunityPublish(string, bool, bool, string) bool { return false }
 
-func requestCommunityPackPublish(string) bool { return false }
+func requestCommunityPackPublish(string, string) bool { return false }
 
 func takeCommunityResult() string { return "" }
 
@@ -101,6 +101,10 @@ func takeEditorColorPicker() string {
 func requestEditorTitle(string) bool { return false }
 
 func takeEditorTitle() string { return "" }
+
+func requestCommunityCoverImport(int) bool { return false }
+
+func takeCommunityCoverImport() string { return "" }
 
 func requestEditorPackImport() bool {
 	return false

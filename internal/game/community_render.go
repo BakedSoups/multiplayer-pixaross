@@ -80,7 +80,9 @@ func (g *Game) drawCommunityBrowse(screen *ebiten.Image) {
 		r := communityGalleryCard(slot)
 		drawRounded(screen, r, 6, colWhite)
 		drawRectOutline(screen, r, 2, colGridHeavy)
-		if item.Puzzle != nil {
+		if len(item.PreviewRaw) > 0 {
+			drawCommunityArtThumbnail(screen, item.PreviewRaw, rect{x: r.x + 8, y: r.y + 8, w: 54, h: 54})
+		} else if item.Puzzle != nil {
 			drawCommunityArtThumbnail(screen, item.Puzzle.RevealRaw, rect{x: r.x + 8, y: r.y + 8, w: 54, h: 54})
 		} else if len(item.Levels) > 0 && item.Levels[0].Puzzle != nil {
 			drawCommunityArtThumbnail(screen, item.Levels[0].Puzzle.RevealRaw, rect{x: r.x + 8, y: r.y + 8, w: 54, h: 54})
@@ -486,6 +488,10 @@ func (g *Game) drawCommunityPackSetup(screen *ebiten.Image) {
 			drawCommunityArtThumbnail(screen, draft.Puzzle.RevealRaw, communityPackSetupPreview(art))
 		}
 	}
+	if len(g.packSetupPreviewRaw) > 0 {
+		drawCommunityArtThumbnail(screen, g.packSetupPreviewRaw, rect{x: 242, y: 302, w: 56, h: 56})
+	}
+	drawButton(screen, communityPackUploadCoverButton(), "or upload cover")
 	drawPublishField(screen, communityPackTitleField(), "Title", g.packSetupTitle, g.packSetupField == 0)
 	drawPublishField(screen, communityPackDescriptionField(), "Description", g.packSetupDescription, g.packSetupField == 1)
 	drawButton(screen, communityPackSaveDraftButton(), "Save Draft")
@@ -647,7 +653,12 @@ func (g *Game) drawCommunityPublishSetup(screen *ebiten.Image) {
 	}
 	drawCenteredText(screen, "PUBLISH ART", rect{x: 80, y: 190, w: 380, h: 30}, colInk)
 	drawCommunityArtThumbnail(screen, draft.Puzzle.SkeletonRaw, rect{x: 52, y: 238, w: 94, h: 94})
-	drawCommunityArtThumbnail(screen, draft.Puzzle.RevealRaw, rect{x: 154, y: 238, w: 94, h: 94})
+	cover := draft.Puzzle.RevealRaw
+	if len(g.publishPreviewRaw) > 0 {
+		cover = g.publishPreviewRaw
+	}
+	drawCommunityArtThumbnail(screen, cover, rect{x: 154, y: 238, w: 94, h: 94})
+	drawButton(screen, communityPublishCoverButton(), "Upload cover")
 	drawPublishField(screen, communityPublishTitleField(), "Name", g.publishTitle, g.publishField == 0)
 	drawPublishField(screen, communityPublishDescriptionField(), "Description", g.publishDescription, g.publishField == 1)
 	drawPublishField(screen, communityPublishTagsField(), "Tags", g.publishTags, g.publishField == 2)
@@ -749,6 +760,7 @@ func communityPublishTagsField() rect        { return rect{x: 270, y: 362, w: 22
 func communityPublishOfficialButton() rect   { return rect{x: 88, y: 426, w: 364, h: 40} }
 func communityPublishRightsButton() rect     { return rect{x: 88, y: 514, w: 364, h: 40} }
 func communityPublishConfirmButton() rect    { return rect{x: 170, y: 566, w: 200, h: 44} }
+func communityPublishCoverButton() rect      { return rect{x: 52, y: 346, w: 196, h: 38} }
 func communityImportPreviewRect(slot int) rect {
 	column := slot % 3
 	row := slot / 3
@@ -764,10 +776,11 @@ func communityPackSetupPreview(art int) rect {
 	row := art / 4
 	return rect{x: 82 + float64(column)*96, y: 238 + float64(row)*64, w: 56, h: 56}
 }
-func communityPackTitleField() rect         { return rect{x: 76, y: 378, w: 388, h: 40} }
-func communityPackDescriptionField() rect   { return rect{x: 76, y: 444, w: 388, h: 40} }
-func communityPackSaveDraftButton() rect    { return rect{x: 76, y: 520, w: 184, h: 44} }
-func communityPackSetupPublishButton() rect { return rect{x: 280, y: 520, w: 184, h: 44} }
+func communityPackUploadCoverButton() rect  { return rect{x: 172, y: 342, w: 196, h: 30} }
+func communityPackTitleField() rect         { return rect{x: 76, y: 400, w: 388, h: 40} }
+func communityPackDescriptionField() rect   { return rect{x: 76, y: 466, w: 388, h: 40} }
+func communityPackSaveDraftButton() rect    { return rect{x: 76, y: 536, w: 184, h: 44} }
+func communityPackSetupPublishButton() rect { return rect{x: 280, y: 536, w: 184, h: 44} }
 func communityDraftRect(slot int) rect {
 	return rect{x: 54, y: 234 + float64(slot)*88, w: 432, h: 74}
 }

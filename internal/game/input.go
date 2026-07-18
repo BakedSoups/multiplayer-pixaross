@@ -232,6 +232,16 @@ func (g *Game) updateCommunityInput() {
 			g.showCommunityNotice("import failed: " + err.Error())
 		}
 	}
+	if raw := takeCommunityCoverImport(); raw != "" {
+		var preview [][]string
+		if json.Unmarshal([]byte(raw), &preview) == nil {
+			if g.communityView == communityPublishSetup {
+				g.publishPreviewRaw = preview
+			} else if g.communityView == communityPackSetup {
+				g.packSetupPreviewRaw = preview
+			}
+		}
+	}
 	if g.communityView == communitySignIn && !communitySignedIn() {
 		for _, char := range ebiten.AppendInputChars(nil) {
 			if len(g.communityEmail) < 80 && (char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' || char >= '0' && char <= '9' || strings.ContainsRune("@._+-", char)) {
@@ -575,6 +585,8 @@ func (g *Game) updateCommunityInput() {
 		}
 	case communityPublishSetup:
 		switch {
+		case communityPublishCoverButton().Contains(x, y):
+			requestCommunityCoverImport(10)
 		case communityPublishTitleField().Contains(x, y):
 			g.publishField = 0
 		case communityPublishDescriptionField().Contains(x, y):
@@ -625,6 +637,10 @@ func (g *Game) updateCommunityInput() {
 			g.startNewCommunityArt()
 		}
 	case communityPackSetup:
+		if communityPackUploadCoverButton().Contains(x, y) {
+			requestCommunityCoverImport(10)
+			return
+		}
 		for art := 0; art < len(g.packSetupItems) && art < 8; art++ {
 			if communityPackSetupPreview(art).Contains(x, y) {
 				g.packSetupPreview = art
