@@ -202,6 +202,7 @@ begin
   values (uid, p_local_id, trim(p_title), coalesce(p_description, ''), coalesce(p_tags, '{}'))
   on conflict (owner_id, local_id) do update set
     title = excluded.title, description = excluded.description, tags = excluded.tags,
+    status = 'published', visibility = 'public',
     current_version = public.levels.current_version + 1, updated_at = now()
   returning * into target_level;
 
