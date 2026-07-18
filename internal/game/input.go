@@ -266,6 +266,16 @@ func (g *Game) updateCommunityInput() {
 			g.profileBioDraft = g.profileBioDraft[:len(g.profileBioDraft)-1]
 		}
 	}
+	if g.communityView == communitySignIn && communitySignedIn() && g.profileNameEditing {
+		for _, char := range ebiten.AppendInputChars(nil) {
+			if char >= 32 && char <= 126 && len(g.profileNameDraft) < 40 {
+				g.profileNameDraft += string(char)
+			}
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) && len(g.profileNameDraft) > 0 {
+			g.profileNameDraft = g.profileNameDraft[:len(g.profileNameDraft)-1]
+		}
+	}
 	if g.communityView == communityPublishSetup {
 		for _, char := range ebiten.AppendInputChars(nil) {
 			if char < 32 || char > 126 {
@@ -376,6 +386,7 @@ func (g *Game) updateCommunityInput() {
 	}
 	if g.communityView == communityHome && communityAccountButton().Contains(x, y) {
 		g.profileBioDraft = g.profileBio
+		g.profileNameDraft = g.profileName
 		g.communityView = communitySignIn
 		return
 	}
@@ -668,15 +679,25 @@ func (g *Game) updateCommunityInput() {
 	case communitySignIn:
 		if communitySignedIn() {
 			switch {
+			case communityAccountNameField().Contains(x, y):
+				g.profileNameEditing, g.profileBioEditing = true, false
 			case communityAccountBioField().Contains(x, y):
-				g.profileBioEditing = true
+				g.profileBioEditing, g.profileNameEditing = true, false
 			case communityAccountBioSaveButton().Contains(x, y):
+				name := strings.TrimSpace(g.profileNameDraft)
+				if name == "" {
+					g.showCommunityNotice("name is required")
+					return
+				}
+				g.profileName = name
 				g.profileBio = strings.TrimSpace(g.profileBioDraft)
+				saveCommunityName(g.profileName)
 				saveCommunityBio(g.profileBio)
 				if raw, err := json.Marshal(g.profileArt.puzzle()); err == nil {
-					syncCommunityProfile(string(raw), g.profileBio)
+					syncCommunityProfile(string(raw), g.profileBio, g.profileName)
 				}
 				g.profileBioEditing = false
+				g.profileNameEditing = false
 			case communitySignOutButton().Contains(x, y):
 				requestCommunitySignOut()
 				g.communityView = communityHome

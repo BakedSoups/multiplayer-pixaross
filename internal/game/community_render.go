@@ -215,7 +215,14 @@ func (g *Game) drawCommunityCreators(screen *ebiten.Image) {
 			name = name[:20]
 		}
 		drawText(screen, name, int(r.x+76), int(r.y+25), colInk)
-		drawText(screen, fmt.Sprintf("%d art", len(creator.Levels)), int(r.x+76), int(r.y+50), colMuted)
+		bio := creator.Bio
+		if bio == "" {
+			bio = fmt.Sprintf("%d published", len(creator.Levels))
+		}
+		if len(bio) > 24 {
+			bio = bio[:24]
+		}
+		drawText(screen, bio, int(r.x+76), int(r.y+50), colMuted)
 		for art := 0; art < 3 && art < len(creator.Levels); art++ {
 			if creator.Levels[art].Puzzle != nil {
 				drawCommunityArtThumbnail(screen, creator.Levels[art].Puzzle.RevealRaw, communityCreatorPreviewRect(slot, art))
@@ -358,8 +365,9 @@ func (g *Game) drawCommunitySignIn(screen *ebiten.Image) {
 	if communitySignedIn() {
 		drawCommunityArtThumbnail(screen, g.profileArt.rawPixels(editorLayerAfter), rect{x: 226, y: 278, w: 88, h: 88})
 		drawCenteredText(screen, "Signed in", rect{x: 120, y: 374, w: 300, h: 30}, colInk)
+		drawPublishField(screen, communityAccountNameField(), "Name", g.profileNameDraft, g.profileNameEditing)
 		drawPublishField(screen, communityAccountBioField(), "Bio", g.profileBioDraft, g.profileBioEditing)
-		drawButton(screen, communityAccountBioSaveButton(), "save bio")
+		drawButton(screen, communityAccountBioSaveButton(), "save profile")
 		drawButton(screen, communitySignOutButton(), "sign out")
 		return
 	}
@@ -874,9 +882,10 @@ func communityPackDeleteButton(slot int) rect {
 func communityGoogleButton() rect         { return rect{x: 122, y: 370, w: 296, h: 42} }
 func communityEmailInput() rect           { return rect{x: 102, y: 434, w: 336, h: 44} }
 func communitySendLinkButton() rect       { return rect{x: 142, y: 500, w: 256, h: 42} }
-func communityAccountBioField() rect      { return rect{x: 102, y: 430, w: 336, h: 44} }
-func communityAccountBioSaveButton() rect { return rect{x: 102, y: 506, w: 158, h: 42} }
-func communitySignOutButton() rect        { return rect{x: 280, y: 506, w: 158, h: 42} }
+func communityAccountNameField() rect     { return rect{x: 102, y: 420, w: 336, h: 40} }
+func communityAccountBioField() rect      { return rect{x: 102, y: 486, w: 336, h: 40} }
+func communityAccountBioSaveButton() rect { return rect{x: 102, y: 550, w: 158, h: 42} }
+func communitySignOutButton() rect        { return rect{x: 280, y: 550, w: 158, h: 42} }
 func communityPackDraftButton(slot int) rect {
 	return rect{x: 66, y: 246 + float64(slot)*72, w: 408, h: 64}
 }

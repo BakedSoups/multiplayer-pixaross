@@ -103,7 +103,7 @@ func (g *Game) closeProfileEditor(save bool) {
 		saveCommunityProfile(g.profileArt.packJSON())
 		saveCommunityBio(g.profileBio)
 		if raw, err := json.Marshal(g.profileArt.puzzle()); err == nil {
-			syncCommunityProfile(string(raw), g.profileBio)
+			syncCommunityProfile(string(raw), g.profileBio, g.profileName)
 		}
 	}
 	g.editor = g.profileReturn
@@ -119,7 +119,7 @@ func (g *Game) syncCommunityProfileArt() {
 		return
 	}
 	if raw, err := json.Marshal(g.profileArt.puzzle()); err == nil {
-		syncCommunityProfile(string(raw), g.profileBio)
+		syncCommunityProfile(string(raw), g.profileBio, g.profileName)
 	}
 }
 

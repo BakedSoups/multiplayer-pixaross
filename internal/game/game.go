@@ -63,23 +63,26 @@ type Game struct {
 	menuNoticeUntil time.Time
 	levelPage       int
 
-	editor            editorState
-	editorUndo        []editorState
-	editorPointer     bool
-	editorLastX       int
-	editorLastY       int
-	editorSizeOpen    bool
-	editorPreview     bool
-	communityPreview  bool
-	editorOnionSkin   bool
-	currentDraftID    string
-	profileArt        editorState
-	profileReturn     editorState
-	profileDraftID    string
-	editingProfile    bool
-	profileBio        string
-	profileBioDraft   string
-	profileBioEditing bool
+	editor             editorState
+	editorUndo         []editorState
+	editorPointer      bool
+	editorLastX        int
+	editorLastY        int
+	editorSizeOpen     bool
+	editorPreview      bool
+	communityPreview   bool
+	editorOnionSkin    bool
+	currentDraftID     string
+	profileArt         editorState
+	profileReturn      editorState
+	profileDraftID     string
+	editingProfile     bool
+	profileBio         string
+	profileBioDraft    string
+	profileBioEditing  bool
+	profileName        string
+	profileNameDraft   string
+	profileNameEditing bool
 
 	communityLibrary       community.Library
 	communityView          communityView
@@ -170,6 +173,7 @@ func New(puzzlePath string) (*Game, error) {
 		editor:           initialEditor(),
 		profileArt:       initialProfileArt(),
 		profileBio:       loadCommunityBio(),
+		profileName:      loadCommunityName(),
 		communityLibrary: loadCommunityLibrary(),
 		selectedCreator:  -1,
 		selectedGallery:  -1,

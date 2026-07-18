@@ -218,6 +218,13 @@
 	};
 	window.communityAccountLabel = () => readCommunitySession()?.access_token ? "Account" : "Sign in";
 	window.communitySignedIn = () => Boolean(readCommunitySession()?.access_token);
+	window.communityDisplayName = () => {
+	  try {
+	    const token = readCommunitySession()?.access_token || "";
+	    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+	    return payload.user_metadata?.full_name || payload.user_metadata?.name || payload.email?.split("@")[0] || "Creator";
+	  } catch (_) { return "Creator"; }
+	};
 	window.requestCommunityPublish = async (raw, submitOfficial, rightsConfirmed, previewRaw) => {
 	  const { url, key } = communityConfig();
 	  if (!url || !key) return setCommunityResult("community cloud is not configured yet");
@@ -400,14 +407,14 @@
 	    setCommunityResult(error.message || "could not load creators");
 	  }
 	};
-	window.syncCommunityProfile = async (raw, bio) => {
+	window.syncCommunityProfile = async (raw, bio, displayName) => {
 	  const { url, key } = communityConfig();
 	  const session = await validCommunitySession().catch(() => null);
 	  if (!url || !key || !session?.access_token) return;
 	  try {
 	    const response = await fetch(`${url}/rest/v1/rpc/save_creator_profile`, {
 	      method: "POST", headers: communityHeaders(session.access_token),
-	      body: JSON.stringify({ p_avatar_puzzle: JSON.parse(raw), p_bio: String(bio || "").slice(0, 120) })
+	      body: JSON.stringify({ p_avatar_puzzle: JSON.parse(raw), p_bio: String(bio || "").slice(0, 120), p_display_name: String(displayName || "Creator").slice(0, 40) })
 	    });
 	    if (!response.ok) throw new Error((await response.json()).message || "Profile sync failed");
 	    window.requestCommunityCreators?.();
