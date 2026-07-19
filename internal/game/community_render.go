@@ -502,9 +502,6 @@ func (g *Game) drawProfilePreferenceButtons(screen *ebiten.Image, palette, favor
 	drawText(screen, "Favorite color", int(communityAccountColorButton().x), 404, colMuted)
 	r := communityAccountColorButton()
 	drawPaletteColorButton(screen, r, favoriteColor, g.profileColorPicking)
-	if g.profilePaletteSlot >= 0 || g.profileColorPicking {
-		drawProfileColorPicker(screen)
-	}
 }
 
 func drawPaletteColorButton(screen *ebiten.Image, r rect, value string, selected bool) {
@@ -522,19 +519,6 @@ func drawPaletteColorButton(screen *ebiten.Image, r rect, value string, selected
 		sw := rect{x: r.x + 8, y: r.y + 6, w: r.w - 16, h: r.h - 12}
 		drawRounded(screen, sw, 2, c)
 		drawRectOutline(screen, sw, 1, colGridHeavy)
-	}
-}
-
-func drawProfileColorPicker(screen *ebiten.Image) {
-	panel := rect{x: 102, y: 386, w: 336, h: 26}
-	drawRounded(screen, panel, 4, colWhite)
-	drawRectOutline(screen, panel, 2, colGridHeavy)
-	for index, value := range profileColorOptions {
-		r := communityAccountColorSwatchButton(index)
-		if c, ok := parseEditorHexColor(value); ok {
-			drawRounded(screen, r, 2, c)
-			drawRectOutline(screen, r, 1, colGridHeavy)
-		}
 	}
 }
 
@@ -562,6 +546,21 @@ func setProfilePaletteSlot(palette string, slot int, value string) string {
 		slots[slot] = strings.ToUpper(value)
 	}
 	return strings.Join(slots[:], ",")
+}
+
+func profilePaletteColorInitial(palette string, slot int) string {
+	slots := profilePaletteSlots(palette)
+	if slot >= 0 && slot < len(slots) {
+		return profileColorInitial(slots[slot])
+	}
+	return profileColorInitial("")
+}
+
+func profileColorInitial(value string) string {
+	if c, ok := parseEditorHexColor(value); ok {
+		return editorColorHex(c)
+	}
+	return "#A35A4D"
 }
 
 func drawPaletteChoiceButton(screen *ebiten.Image, r rect, palette string, selected bool) {
@@ -1512,9 +1511,6 @@ func communityAccountPaletteOptionButton(slot int) rect {
 }
 func communityAccountColorButton() rect {
 	return rect{x: 344, y: 420, w: 40, h: 30}
-}
-func communityAccountColorSwatchButton(slot int) rect {
-	return rect{x: 112 + float64(slot)*34, y: 389, w: 24, h: 20}
 }
 func communityAccountSocialField(slot int) rect {
 	return rect{x: 102, y: 468 + float64(slot)*36, w: 336, h: 32}

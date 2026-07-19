@@ -308,6 +308,9 @@ func (g *Game) updateCommunityInput() {
 			}
 		}
 	}
+	if raw := takeEditorColorPicker(); raw != "" && g.communityView == communitySignIn && communitySignedIn() {
+		g.applyProfilePickedColor(raw)
+	}
 	if g.communityView == communitySignIn && !communitySignedIn() {
 		g.communityEmail, _ = updateTextField(g.communityEmail, 80, allowEmailText)
 		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
@@ -796,26 +799,15 @@ func (g *Game) updateCommunityInput() {
 		}
 	case communitySignIn:
 		if communitySignedIn() {
-			if g.profilePaletteSlot >= 0 || g.profileColorPicking {
-				for index, value := range profileColorOptions {
-					if communityAccountColorSwatchButton(index).Contains(x, y) {
-						if g.profilePaletteSlot >= 0 {
-							g.profilePalette = setProfilePaletteSlot(g.profilePalette, g.profilePaletteSlot, value)
-							g.profilePaletteSlot = -1
-						} else {
-							g.profileColor = value
-							g.profileColorPicking = false
-						}
-						return
-					}
-				}
-			}
 			for index := 0; index < 4; index++ {
 				if communityAccountPaletteOptionButton(index).Contains(x, y) {
 					g.profilePaletteSlot = index
 					g.profileColorPicking = false
 					g.profileNameEditing, g.profileBioEditing, g.profileSocialEditing = false, false, false
 					g.profileSocialSlot = -1
+					if !requestEditorColorPicker(profilePaletteColorInitial(g.profilePalette, index)) {
+						g.showCommunityNotice("color picker unavailable")
+					}
 					return
 				}
 			}
@@ -834,6 +826,9 @@ func (g *Game) updateCommunityInput() {
 				g.profilePaletteSlot = -1
 				g.profileNameEditing, g.profileBioEditing, g.profileSocialEditing = false, false, false
 				g.profileSocialSlot = -1
+				if !requestEditorColorPicker(profileColorInitial(g.profileColor)) {
+					g.showCommunityNotice("color picker unavailable")
+				}
 			case communityAccountBioSaveButton().Contains(x, y):
 				name := strings.TrimSpace(g.profileNameDraft)
 				if name == "" {
@@ -1192,6 +1187,23 @@ func normalizeProfileSocialList(values [3]string) (string, bool) {
 		result = result[:160]
 	}
 	return result, true
+}
+
+func (g *Game) applyProfilePickedColor(raw string) {
+	c, ok := parseEditorHexColor(raw)
+	if !ok {
+		return
+	}
+	value := editorColorHex(c)
+	if g.profilePaletteSlot >= 0 {
+		g.profilePalette = setProfilePaletteSlot(g.profilePalette, g.profilePaletteSlot, value)
+		g.profilePaletteSlot = -1
+		return
+	}
+	if g.profileColorPicking {
+		g.profileColor = value
+		g.profileColorPicking = false
+	}
 }
 
 func socialPlatform(value string) string {
