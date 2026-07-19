@@ -34,10 +34,21 @@
       font-size: 13px;
       opacity: 0.75;
     }
+
+    #clipboard {
+      position: fixed;
+      left: -1000px;
+      top: -1000px;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
   <div id="status">Loading...</div>
+  <textarea id="clipboard" aria-hidden="true" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
   <script src="config.js" onerror="this.remove()"></script>
   <script src="howler.min.js"></script>
   <script src="wasm_exec.js"></script>
@@ -116,6 +127,21 @@
 	window.__pendingCommunityPublishedID = "";
 	window.__pendingCommunityPublishedPackID = "";
 	window.__pendingTextPaste = "";
+	const clipboardTarget = document.getElementById("clipboard");
+	const focusClipboardTarget = () => {
+	  if (document.activeElement !== clipboardTarget) {
+	    clipboardTarget.focus({ preventScroll: true });
+	  }
+	};
+	window.addEventListener("pointerdown", () => setTimeout(focusClipboardTarget, 0));
+	window.addEventListener("keydown", focusClipboardTarget);
+	clipboardTarget.addEventListener("paste", (event) => {
+	  const text = event.clipboardData?.getData("text/plain") || "";
+	  if (!text) return;
+	  window.__pendingTextPaste = text;
+	  clipboardTarget.value = "";
+	  event.preventDefault();
+	});
 	window.addEventListener("paste", (event) => {
 	  const text = event.clipboardData?.getData("text/plain") || "";
 	  if (!text) return;
