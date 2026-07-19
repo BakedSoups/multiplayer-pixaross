@@ -473,11 +473,11 @@ func drawSupportedSocialIcons(screen *ebiten.Image) {
 
 func drawProfilePreferenceRow(screen *ebiten.Image, x, y int, palette, favoriteColor string) {
 	if palette != "" {
-		drawText(screen, "palette", x, y+16, colMuted)
+		drawText(screen, "favorite pallet", x, y+16, colMuted)
 		slots := profilePaletteSlots(palette)
 		for index, value := range slots {
 			if c, ok := parseEditorHexColor(value); ok {
-				sw := rect{x: float64(x + 80 + index*18), y: float64(y + 1), w: 14, h: 14}
+				sw := rect{x: float64(x + 148 + index*18), y: float64(y + 1), w: 14, h: 14}
 				drawRounded(screen, sw, 2, c)
 				drawRectOutline(screen, sw, 1, colGridHeavy)
 			}
@@ -485,11 +485,11 @@ func drawProfilePreferenceRow(screen *ebiten.Image, x, y int, palette, favoriteC
 	}
 	if favoriteColor != "" {
 		if c, ok := parseEditorHexColor(favoriteColor); ok {
-			sw := rect{x: float64(x + 174), y: float64(y + 1), w: 18, h: 18}
+			sw := rect{x: float64(x + 318), y: float64(y + 1), w: 18, h: 18}
 			drawRounded(screen, sw, 3, c)
 			drawRectOutline(screen, sw, 2, colGridHeavy)
 		}
-		drawText(screen, "color", x+200, y+16, colMuted)
+		drawText(screen, "favorite color", x+342, y+16, colMuted)
 	}
 }
 
@@ -885,7 +885,7 @@ func (g *Game) drawCommunityMyArt(screen *ebiten.Image) {
 		drawButton(screen, communityDraftEditButton(slot), "edit")
 		publishLabel := "pub"
 		if draft.Status == community.LevelPublishedStatus {
-			publishLabel = "pub'd"
+			publishLabel = "ok"
 		}
 		if g.pendingPublishID == draft.ID {
 			publishLabel = "..."
