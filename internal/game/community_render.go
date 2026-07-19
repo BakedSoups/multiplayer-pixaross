@@ -485,11 +485,11 @@ func drawProfilePreferenceRow(screen *ebiten.Image, x, y int, palette, favoriteC
 	}
 	if favoriteColor != "" {
 		if c, ok := parseEditorHexColor(favoriteColor); ok {
-			sw := rect{x: float64(x + 318), y: float64(y + 1), w: 18, h: 18}
+			sw := rect{x: float64(x + 148), y: float64(y + 25), w: 18, h: 18}
 			drawRounded(screen, sw, 3, c)
 			drawRectOutline(screen, sw, 2, colGridHeavy)
 		}
-		drawText(screen, "favorite color", x+342, y+16, colMuted)
+		drawText(screen, "favorite color", x, y+40, colMuted)
 	}
 }
 
@@ -885,7 +885,7 @@ func (g *Game) drawCommunityMyArt(screen *ebiten.Image) {
 		drawButton(screen, communityDraftEditButton(slot), "edit")
 		publishLabel := "pub"
 		if draft.Status == community.LevelPublishedStatus {
-			publishLabel = "ok"
+			publishLabel = "online"
 		}
 		if g.pendingPublishID == draft.ID {
 			publishLabel = "..."
