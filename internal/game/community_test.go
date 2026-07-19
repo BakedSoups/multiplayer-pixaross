@@ -1,6 +1,10 @@
 package game
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/alex/nongrampictures/internal/community"
+)
 
 func TestNormalizeProfileSocialRejectsLinks(t *testing.T) {
 	rejected := []string{
@@ -27,6 +31,26 @@ func TestNormalizeProfileSocialAllowsHandles(t *testing.T) {
 	}
 }
 
+func TestAppendAllowedTextSanitizesPaste(t *testing.T) {
+	got, changed := appendAllowedText("hi", "\tthere\n世界!", 12, allowPrintableText)
+	if !changed {
+		t.Fatal("paste did not change the field")
+	}
+	if got != "hi there !" {
+		t.Fatalf("field = %q, want sanitized printable text", got)
+	}
+}
+
+func TestAppendAllowedTextCapsLength(t *testing.T) {
+	got, changed := appendAllowedText("abc", "defgh", 6, allowPrintableText)
+	if !changed {
+		t.Fatal("paste did not change the field")
+	}
+	if got != "abcdef" {
+		t.Fatalf("field = %q, want max length applied", got)
+	}
+}
+
 func TestLoadCommunityChat(t *testing.T) {
 	var game Game
 	raw := `[{"id":"m1","authorId":"u1","authorName":"Alex","body":"nice puzzle","createdAt":"2026-07-19T00:00:00Z"}]`
@@ -46,6 +70,22 @@ func TestCommunityChatBackReturnsToPreviousView(t *testing.T) {
 	game.communityBack()
 	if game.communityView != communityGalleryPack {
 		t.Fatalf("communityView = %v, want gallery pack", game.communityView)
+	}
+}
+
+func TestOpenChatAuthorProfileSelectsCreator(t *testing.T) {
+	game := Game{
+		communityView: communityChat,
+		communityCreators: []community.CreatorProfile{
+			{ID: "u1", DisplayName: "Alex"},
+			{ID: "u2", DisplayName: "Sam"},
+		},
+	}
+	if !game.openChatAuthorProfile("u2") {
+		t.Fatal("author profile was not opened")
+	}
+	if game.communityView != communityCreatorProfile || game.selectedCreator != 1 {
+		t.Fatalf("view = %v creator = %d, want profile index 1", game.communityView, game.selectedCreator)
 	}
 }
 

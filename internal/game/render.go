@@ -656,6 +656,8 @@ func (g *Game) drawSettings(screen *ebiten.Image) {
 	drawRectOutline(screen, g.layout.soundButton, 2, color.RGBA{98, 92, 84, 255})
 	drawButton(screen, g.layout.autoCorrectButton, autoCorrectLabel(g.autoCorrect))
 	drawRectOutline(screen, g.layout.autoCorrectButton, 2, color.RGBA{98, 92, 84, 255})
+	drawCenteredText(screen, "stops wrong fills", rect{x: panel.x + 44, y: panel.y + 194, w: panel.w - 88, h: 20}, colMuted)
+	drawCenteredText(screen, "mistakes add +10s", rect{x: panel.x + 44, y: panel.y + 216, w: panel.w - 88, h: 20}, colMuted)
 	drawButton(screen, g.layout.settingsCloseButton, "back")
 	drawRectOutline(screen, g.layout.settingsCloseButton, 2, color.RGBA{98, 92, 84, 255})
 }

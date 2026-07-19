@@ -461,6 +461,11 @@ func (g *Game) loadCommunityChat(raw string) error {
 	if err := json.Unmarshal([]byte(raw), &messages); err != nil {
 		return err
 	}
+	for i := range messages {
+		if messages[i].AvatarPuzzle != nil {
+			_ = messages[i].AvatarPuzzle.ParseSolution()
+		}
+	}
 	g.communityChatMessages = messages
 	return nil
 }
@@ -473,9 +478,25 @@ func (g *Game) openCommunityChat(kind, id, title string, back communityView) {
 	g.chatReturn = back
 	g.communityChatMessages = nil
 	g.communityView = communityChat
+	requestCommunityCreators()
 	if !requestCommunityChat(kind, id) {
 		g.showCommunityNotice("chat is available in the web build")
 	}
+}
+
+func (g *Game) openChatAuthorProfile(authorID string) bool {
+	for i := range g.communityCreators {
+		if g.communityCreators[i].ID != authorID {
+			continue
+		}
+		g.selectedCreator = i
+		g.communityPage = 0
+		g.communityView = communityCreatorProfile
+		return true
+	}
+	requestCommunityCreators()
+	g.showCommunityNotice("loading profile")
+	return false
 }
 
 func (g *Game) sendCommunityChat() {

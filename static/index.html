@@ -115,6 +115,18 @@
 	window.__pendingCommunityPublished = "";
 	window.__pendingCommunityPublishedID = "";
 	window.__pendingCommunityPublishedPackID = "";
+	window.__pendingTextPaste = "";
+	window.addEventListener("paste", (event) => {
+	  const text = event.clipboardData?.getData("text/plain") || "";
+	  if (!text) return;
+	  window.__pendingTextPaste = text;
+	  event.preventDefault();
+	});
+	window.takeTextPaste = () => {
+	  const value = window.__pendingTextPaste || "";
+	  window.__pendingTextPaste = "";
+	  return value;
+	};
 	const communitySessionKey = "pixaross.community.session";
 	const communityConfig = () => ({
 	  url: String(window.SUPABASE_URL || "").replace(/\/$/, ""),

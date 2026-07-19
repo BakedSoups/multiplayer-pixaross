@@ -104,6 +104,7 @@ type Game struct {
 	communityChatMessages  []community.ChatMessage
 	galleryKind            string
 	gallerySort            string
+	gallerySortOpen        bool
 	selectedGallery        int
 	chatKind               string
 	chatID                 string

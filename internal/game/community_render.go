@@ -71,9 +71,10 @@ func (g *Game) drawCommunityBrowse(screen *ebiten.Image) {
 	drawSelectedButton(screen, communityGalleryAllButton(), "All", g.galleryKind == "all")
 	drawSelectedButton(screen, communityGalleryArtButton(), "Art", g.galleryKind == "art")
 	drawSelectedButton(screen, communityGalleryPacksButton(), "Packs", g.galleryKind == "pack")
-	drawSelectedButton(screen, communityGalleryNewButton(), "sort by new", g.gallerySort == "new")
-	drawSelectedButton(screen, communityGalleryPlayedButton(), "most played", g.gallerySort == "played")
-	drawSelectedButton(screen, communityGalleryTopButton(), "top rated", g.gallerySort == "top")
+	drawSelectedButton(screen, communityGallerySortButton(), communityGallerySortLabel(g.gallerySort), g.gallerySortOpen)
+	if g.gallerySortOpen {
+		drawCommunitySortMenu(screen, g.gallerySort)
+	}
 	if len(g.communityGallery) == 0 {
 		drawCenteredText(screen, "No published work yet", rect{x: 60, y: 346, w: 420, h: 40}, colMuted)
 		return
@@ -127,12 +128,39 @@ func drawSelectedButton(screen *ebiten.Image, r rect, label string, selected boo
 	drawButton(screen, r, label)
 }
 
+func drawCommunitySortMenu(screen *ebiten.Image, selected string) {
+	menu := communityGallerySortMenu()
+	drawRounded(screen, menu, 7, colWhite)
+	drawRectOutline(screen, menu, 2, colGridHeavy)
+	drawCommunitySortMenuOption(screen, communityGalleryNewButton(), "sort by new", selected == "new")
+	drawCommunitySortMenuOption(screen, communityGalleryPlayedButton(), "most played", selected == "played")
+	drawCommunitySortMenuOption(screen, communityGalleryTopButton(), "top rated", selected == "top")
+}
+
+func drawCommunitySortMenuOption(screen *ebiten.Image, r rect, label string, selected bool) {
+	if selected {
+		drawRounded(screen, inset(r, 4), 5, colPanel)
+	}
+	drawCenteredText(screen, label, r, colInk)
+}
+
 func (g *Game) drawThumbLikeButton(screen *ebiten.Image, r rect, likes int) {
 	drawButton(screen, r, "")
 	if g.icons != nil && g.icons.Thumbsup != nil {
-		drawPixelIconImageSized(screen, g.icons.Thumbsup, rect{x: r.x + 7, y: r.y + 5, w: 18, h: 18}, 18)
+		drawPixelIconImageSized(screen, g.icons.Thumbsup, rect{x: r.x + 5, y: r.y + 4, w: 20, h: 20}, 20)
 	}
-	drawText(screen, fmt.Sprintf("%d", likes), int(r.x+34), int(r.y+19), colInk)
+	drawText(screen, fmt.Sprintf("%d", likes), int(r.x+31), int(r.y+20), colInk)
+}
+
+func communityGallerySortLabel(sort string) string {
+	switch sort {
+	case "played":
+		return "most played"
+	case "top":
+		return "top rated"
+	default:
+		return "sort by new"
+	}
 }
 
 func (g *Game) drawCommunityGalleryPack(screen *ebiten.Image) {
@@ -174,9 +202,16 @@ func (g *Game) drawCommunityChat(screen *ebiten.Image) {
 			start = 0
 		}
 		y := 278
-		for _, msg := range g.communityChatMessages[start:] {
-			drawText(screen, truncateText(msg.AuthorName, 16), 70, y, colAccent)
-			drawWrappedText(screen, msg.Body, 70, y+22, 46, 2, colInk)
+		for slot, msg := range g.communityChatMessages[start:] {
+			row := communityChatMessageButton(slot)
+			avatar := defaultCommunityProfilePixels
+			if msg.AvatarPuzzle != nil {
+				avatar = msg.AvatarPuzzle.RevealRaw
+			}
+			drawCommunityArtThumbnail(screen, avatar, rect{x: row.x + 8, y: row.y + 5, w: 36, h: 36})
+			drawText(screen, truncateText(msg.AuthorName, 18), int(row.x+54), y, colAccent)
+			drawText(screen, "view profile", int(row.x+270), y, colMuted)
+			drawWrappedText(screen, msg.Body, int(row.x+54), y+22, 38, 2, colInk)
 			y += 50
 		}
 	}
@@ -876,9 +911,11 @@ func communityCatalogPlayButton(slot int) rect {
 func communityGalleryAllButton() rect    { return rect{x: 48, y: 226, w: 62, h: 34} }
 func communityGalleryArtButton() rect    { return rect{x: 114, y: 226, w: 62, h: 34} }
 func communityGalleryPacksButton() rect  { return rect{x: 180, y: 226, w: 78, h: 34} }
-func communityGalleryNewButton() rect    { return rect{x: 48, y: 268, w: 126, h: 34} }
-func communityGalleryPlayedButton() rect { return rect{x: 184, y: 268, w: 132, h: 34} }
-func communityGalleryTopButton() rect    { return rect{x: 326, y: 268, w: 126, h: 34} }
+func communityGallerySortButton() rect   { return rect{x: 286, y: 226, w: 166, h: 34} }
+func communityGallerySortMenu() rect     { return rect{x: 286, y: 264, w: 166, h: 96} }
+func communityGalleryNewButton() rect    { return rect{x: 286, y: 264, w: 166, h: 32} }
+func communityGalleryPlayedButton() rect { return rect{x: 286, y: 296, w: 166, h: 32} }
+func communityGalleryTopButton() rect    { return rect{x: 286, y: 328, w: 166, h: 32} }
 func communityGalleryCard(slot int) rect {
 	return rect{x: 48, y: 314 + float64(slot)*72, w: 444, h: 66}
 }
@@ -892,7 +929,7 @@ func communityGalleryChatButton(slot int) rect {
 }
 func communityGalleryLikeButton(slot int) rect {
 	r := communityGalleryCard(slot)
-	return rect{x: r.x + 378, y: r.y + 35, w: 58, h: 27}
+	return rect{x: r.x + 384, y: r.y + 35, w: 52, h: 27}
 }
 func communityGalleryPromoteButton(slot int) rect {
 	r := communityGalleryCard(slot)
@@ -904,6 +941,9 @@ func communityGalleryPackLevelButton(slot int) rect {
 	return rect{x: 46 + float64(column)*232, y: 270 + float64(row)*92, w: 216, h: 78}
 }
 func communityGalleryPackChatButton() rect { return rect{x: 360, y: 242, w: 92, h: 28} }
+func communityChatMessageButton(slot int) rect {
+	return rect{x: 56, y: 272 + float64(slot)*50, w: 420, h: 48}
+}
 func communityChatInputField() rect        { return rect{x: 56, y: 564, w: 326, h: 42} }
 func communityChatSendButton() rect        { return rect{x: 392, y: 564, w: 92, h: 42} }
 func communityCreatorFeaturedButton() rect { return rect{x: 46, y: 334, w: 448, h: 70} }

@@ -48,6 +48,7 @@ returns jsonb language sql stable security definer set search_path = public as $
     'id', message.id,
     'authorId', message.author_id,
     'authorName', profile.display_name,
+    'avatarPuzzle', profile.avatar_puzzle,
     'body', message.message_body,
     'createdAt', message.created_at
   ) order by message.created_at), '[]'::jsonb)

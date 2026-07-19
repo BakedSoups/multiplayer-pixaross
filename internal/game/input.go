@@ -126,6 +126,57 @@ func (g *Game) updateInput() {
 	g.lastCellY = cellY
 }
 
+func updateTextField(value string, maxLen int, allow func(rune) bool) (string, bool) {
+	changed := false
+	if !textPasteShortcutPressed() {
+		for _, char := range ebiten.AppendInputChars(nil) {
+			var appended bool
+			value, appended = appendAllowedText(value, string(char), maxLen, allow)
+			changed = changed || appended
+		}
+	}
+	if pasted := takeTextPaste(); pasted != "" {
+		var appended bool
+		value, appended = appendAllowedText(value, pasted, maxLen, allow)
+		changed = changed || appended
+	}
+	if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) && len(value) > 0 {
+		value = value[:len(value)-1]
+		changed = true
+	}
+	return value, changed
+}
+
+func appendAllowedText(value, text string, maxLen int, allow func(rune) bool) (string, bool) {
+	if len(value) >= maxLen {
+		return value, false
+	}
+	changed := false
+	for _, char := range text {
+		if char == '\n' || char == '\r' || char == '\t' {
+			char = ' '
+		}
+		if !allow(char) || len(value) >= maxLen {
+			continue
+		}
+		value += string(char)
+		changed = true
+	}
+	return value, changed
+}
+
+func allowPrintableText(char rune) bool {
+	return char >= 32 && char <= 126
+}
+
+func allowEmailText(char rune) bool {
+	return char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' || char >= '0' && char <= '9' || strings.ContainsRune("@._+-", char)
+}
+
+func textPasteShortcutPressed() bool {
+	return inpututil.IsKeyJustPressed(ebiten.KeyV) && (ebiten.IsKeyPressed(ebiten.KeyControl) || ebiten.IsKeyPressed(ebiten.KeyMeta))
+}
+
 func (g *Game) correctedStrokeState(cellX, cellY int, attempted nonogram.CellState) (nonogram.CellState, bool) {
 	if !g.autoCorrect || attempted == nonogram.CellEmpty {
 		return attempted, false
@@ -249,147 +300,56 @@ func (g *Game) updateCommunityInput() {
 		}
 	}
 	if g.communityView == communitySignIn && !communitySignedIn() {
-		for _, char := range ebiten.AppendInputChars(nil) {
-			if len(g.communityEmail) < 80 && (char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' || char >= '0' && char <= '9' || strings.ContainsRune("@._+-", char)) {
-				g.communityEmail += string(char)
-			}
-		}
-		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) && len(g.communityEmail) > 0 {
-			g.communityEmail = g.communityEmail[:len(g.communityEmail)-1]
-		}
+		g.communityEmail, _ = updateTextField(g.communityEmail, 80, allowEmailText)
 		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
 			g.submitCommunitySignIn()
 			return
 		}
 	}
 	if g.communityView == communitySignIn && communitySignedIn() && g.profileBioEditing {
-		for _, char := range ebiten.AppendInputChars(nil) {
-			if char >= 32 && char <= 126 && len(g.profileBioDraft) < 120 {
-				g.profileBioDraft += string(char)
-			}
-		}
-		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) && len(g.profileBioDraft) > 0 {
-			g.profileBioDraft = g.profileBioDraft[:len(g.profileBioDraft)-1]
-		}
+		g.profileBioDraft, _ = updateTextField(g.profileBioDraft, 120, allowPrintableText)
 	}
 	if g.communityView == communitySignIn && communitySignedIn() && g.profileNameEditing {
-		for _, char := range ebiten.AppendInputChars(nil) {
-			if char >= 32 && char <= 126 && len(g.profileNameDraft) < 40 {
-				g.profileNameDraft += string(char)
-			}
-		}
-		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) && len(g.profileNameDraft) > 0 {
-			g.profileNameDraft = g.profileNameDraft[:len(g.profileNameDraft)-1]
-		}
+		g.profileNameDraft, _ = updateTextField(g.profileNameDraft, 40, allowPrintableText)
 	}
 	if g.communityView == communitySignIn && communitySignedIn() && g.profileSocialEditing {
-		for _, char := range ebiten.AppendInputChars(nil) {
-			if char >= 32 && char <= 126 && len(g.profileSocialDraft) < 80 {
-				g.profileSocialDraft += string(char)
-			}
-		}
-		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) && len(g.profileSocialDraft) > 0 {
-			g.profileSocialDraft = g.profileSocialDraft[:len(g.profileSocialDraft)-1]
-		}
+		g.profileSocialDraft, _ = updateTextField(g.profileSocialDraft, 80, allowPrintableText)
 	}
 	if g.communityView == communityChat {
-		for _, char := range ebiten.AppendInputChars(nil) {
-			if char >= 32 && char <= 126 && len(g.chatDraft) < 220 {
-				g.chatDraft += string(char)
-			}
-		}
-		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) && len(g.chatDraft) > 0 {
-			g.chatDraft = g.chatDraft[:len(g.chatDraft)-1]
-		}
+		g.chatDraft, _ = updateTextField(g.chatDraft, 220, allowPrintableText)
 		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
 			g.sendCommunityChat()
 			return
 		}
 	}
 	if g.communityView == communityPublishSetup {
-		for _, char := range ebiten.AppendInputChars(nil) {
-			if char < 32 || char > 126 {
-				continue
-			}
-			switch g.publishField {
-			case 0:
-				if len(g.publishTitle) < 80 {
-					g.publishTitle += string(char)
-				}
-			case 1:
-				if len(g.publishDescription) < 160 {
-					g.publishDescription += string(char)
-				}
-			case 2:
-				if len(g.publishTags) < 100 {
-					g.publishTags += string(char)
-				}
-			}
-		}
-		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
-			switch g.publishField {
-			case 0:
-				if len(g.publishTitle) > 0 {
-					g.publishTitle = g.publishTitle[:len(g.publishTitle)-1]
-				}
-			case 1:
-				if len(g.publishDescription) > 0 {
-					g.publishDescription = g.publishDescription[:len(g.publishDescription)-1]
-				}
-			case 2:
-				if len(g.publishTags) > 0 {
-					g.publishTags = g.publishTags[:len(g.publishTags)-1]
-				}
-			}
+		switch g.publishField {
+		case 0:
+			g.publishTitle, _ = updateTextField(g.publishTitle, 80, allowPrintableText)
+		case 1:
+			g.publishDescription, _ = updateTextField(g.publishDescription, 160, allowPrintableText)
+		case 2:
+			g.publishTags, _ = updateTextField(g.publishTags, 100, allowPrintableText)
 		}
 	}
 	if g.communityView == communityNewArtSetup {
-		for _, char := range ebiten.AppendInputChars(nil) {
-			if char >= 32 && char <= 126 && len(g.newArtTitle) < 80 {
-				g.newArtTitle += string(char)
-			}
-		}
-		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) && len(g.newArtTitle) > 0 {
-			g.newArtTitle = g.newArtTitle[:len(g.newArtTitle)-1]
-		}
+		g.newArtTitle, _ = updateTextField(g.newArtTitle, 80, allowPrintableText)
 		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
 			g.startNewCommunityArt()
 			return
 		}
 	}
 	if g.communityView == communityPackSetup {
-		for _, char := range ebiten.AppendInputChars(nil) {
-			if char < 32 || char > 126 {
-				continue
-			}
-			if g.packSetupField == 0 && len(g.packSetupTitle) < 80 {
-				g.packSetupTitle += string(char)
-			}
-			if g.packSetupField == 1 && len(g.packSetupDescription) < 200 {
-				g.packSetupDescription += string(char)
-			}
+		if g.packSetupField == 0 {
+			g.packSetupTitle, _ = updateTextField(g.packSetupTitle, 80, allowPrintableText)
 		}
-		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
-			if g.packSetupField == 0 && len(g.packSetupTitle) > 0 {
-				g.packSetupTitle = g.packSetupTitle[:len(g.packSetupTitle)-1]
-			}
-			if g.packSetupField == 1 && len(g.packSetupDescription) > 0 {
-				g.packSetupDescription = g.packSetupDescription[:len(g.packSetupDescription)-1]
-			}
+		if g.packSetupField == 1 {
+			g.packSetupDescription, _ = updateTextField(g.packSetupDescription, 200, allowPrintableText)
 		}
 	}
 	if g.communityView == communityMyArt && g.artSearchActive {
-		changed := false
-		for _, char := range ebiten.AppendInputChars(nil) {
-			if char >= 32 && char <= 126 && len(g.artSearch) < 60 {
-				g.artSearch += string(char)
-				changed = true
-			}
-		}
-		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) && len(g.artSearch) > 0 {
-			g.artSearch = g.artSearch[:len(g.artSearch)-1]
-			changed = true
-		}
+		var changed bool
+		g.artSearch, changed = updateTextField(g.artSearch, 60, allowPrintableText)
 		if changed {
 			g.communityPage = 0
 		}
@@ -503,35 +463,45 @@ func (g *Game) updateCommunityInput() {
 		switch {
 		case communityGalleryAllButton().Contains(x, y):
 			g.galleryKind = "all"
+			g.gallerySortOpen = false
 			g.communityPage = 0
 			requestCommunityGallery(g.galleryKind, g.gallerySort)
 			return
 		case communityGalleryArtButton().Contains(x, y):
 			g.galleryKind = "art"
+			g.gallerySortOpen = false
 			g.communityPage = 0
 			requestCommunityGallery(g.galleryKind, g.gallerySort)
 			return
 		case communityGalleryPacksButton().Contains(x, y):
 			g.galleryKind = "pack"
+			g.gallerySortOpen = false
 			g.communityPage = 0
 			requestCommunityGallery(g.galleryKind, g.gallerySort)
 			return
-		case communityGalleryNewButton().Contains(x, y):
+		case communityGallerySortButton().Contains(x, y):
+			g.gallerySortOpen = !g.gallerySortOpen
+			return
+		case g.gallerySortOpen && communityGalleryNewButton().Contains(x, y):
 			g.gallerySort = "new"
+			g.gallerySortOpen = false
 			g.communityPage = 0
 			requestCommunityGallery(g.galleryKind, g.gallerySort)
 			return
-		case communityGalleryPlayedButton().Contains(x, y):
+		case g.gallerySortOpen && communityGalleryPlayedButton().Contains(x, y):
 			g.gallerySort = "played"
+			g.gallerySortOpen = false
 			g.communityPage = 0
 			requestCommunityGallery(g.galleryKind, g.gallerySort)
 			return
-		case communityGalleryTopButton().Contains(x, y):
+		case g.gallerySortOpen && communityGalleryTopButton().Contains(x, y):
 			g.gallerySort = "top"
+			g.gallerySortOpen = false
 			g.communityPage = 0
 			requestCommunityGallery(g.galleryKind, g.gallerySort)
 			return
 		}
+		g.gallerySortOpen = false
 		start := g.communityPage * communityCatalogPerPage
 		for slot := 0; slot < communityCatalogPerPage; slot++ {
 			index := start + slot
@@ -582,6 +552,16 @@ func (g *Game) updateCommunityInput() {
 			}
 		}
 	case communityChat:
+		start := len(g.communityChatMessages) - 5
+		if start < 0 {
+			start = 0
+		}
+		for slot, msg := range g.communityChatMessages[start:] {
+			if communityChatMessageButton(slot).Contains(x, y) {
+				g.openChatAuthorProfile(msg.AuthorID)
+				return
+			}
+		}
 		if communityChatSendButton().Contains(x, y) {
 			g.sendCommunityChat()
 			return
@@ -1036,14 +1016,7 @@ func (g *Game) closeEditorTitleDialog(save bool) {
 }
 
 func (g *Game) updateEditorTitleInput() {
-	for _, char := range ebiten.AppendInputChars(nil) {
-		if char >= 32 && char <= 126 && len(g.editorTitleDraft) < 80 {
-			g.editorTitleDraft += string(char)
-		}
-	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) && len(g.editorTitleDraft) > 0 {
-		g.editorTitleDraft = g.editorTitleDraft[:len(g.editorTitleDraft)-1]
-	}
+	g.editorTitleDraft, _ = updateTextField(g.editorTitleDraft, 80, allowPrintableText)
 	if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
 		g.closeEditorTitleDialog(true)
 		return

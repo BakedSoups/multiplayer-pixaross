@@ -18,6 +18,8 @@ func saveCommunityName(string) bool { return false }
 
 func loadCommunityName() string { return "" }
 
+func takeTextPaste() string { return "" }
+
 func communityAccountLabel() string { return "Sign in" }
 
 func communitySignedIn() bool { return false }

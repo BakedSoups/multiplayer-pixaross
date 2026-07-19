@@ -87,11 +87,12 @@ type GalleryItem struct {
 }
 
 type ChatMessage struct {
-	ID         string `json:"id"`
-	AuthorID   string `json:"authorId"`
-	AuthorName string `json:"authorName"`
-	Body       string `json:"body"`
-	CreatedAt  string `json:"createdAt"`
+	ID           string           `json:"id"`
+	AuthorID     string           `json:"authorId"`
+	AuthorName   string           `json:"authorName"`
+	AvatarPuzzle *nonogram.Puzzle `json:"avatarPuzzle,omitempty"`
+	Body         string           `json:"body"`
+	CreatedAt    string           `json:"createdAt"`
 }
 
 type LevelVersion struct {

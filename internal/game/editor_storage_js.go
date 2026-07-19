@@ -88,6 +88,18 @@ func loadCommunityName() string {
 	return ""
 }
 
+func takeTextPaste() string {
+	fn := js.Global().Get("takeTextPaste")
+	if fn.IsUndefined() || fn.IsNull() {
+		return ""
+	}
+	value := fn.Invoke()
+	if value.IsUndefined() || value.IsNull() {
+		return ""
+	}
+	return value.String()
+}
+
 func loadCommunityProfile() string {
 	storage := js.Global().Get("localStorage")
 	if storage.IsUndefined() || storage.IsNull() {
