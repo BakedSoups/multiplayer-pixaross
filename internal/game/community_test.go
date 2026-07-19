@@ -6,13 +6,12 @@ import (
 	"github.com/alex/nongrampictures/internal/community"
 )
 
-func TestNormalizeProfileSocialRejectsLinks(t *testing.T) {
+func TestNormalizeProfileSocialRejectsUnknownLinks(t *testing.T) {
 	rejected := []string{
 		"https://example.com/me",
 		"http://example.com/me",
 		"www.example.com/me",
-		"instagram.com/name",
-		"bsky.app\\profile\\name",
+		"not-a-real-social.example/name",
 	}
 	for _, value := range rejected {
 		if got, ok := normalizeProfileSocial(value); ok {
@@ -28,6 +27,25 @@ func TestNormalizeProfileSocialAllowsHandles(t *testing.T) {
 	}
 	if got != "instagram @pixaross" {
 		t.Fatalf("handle = %q, want normalized text", got)
+	}
+}
+
+func TestNormalizeProfileSocialAcceptsKnownLinks(t *testing.T) {
+	tests := map[string]string{
+		"https://github.com/BakedSoups":                 "github: bakedsoups",
+		"https://twitter.com/pixaross":                  "x: pixaross",
+		"https://x.com/pixaross":                        "x: pixaross",
+		"https://instagram.com/pixaross/":               "instagram: pixaross",
+		"https://bsky.app/profile/pixaross.bsky.social": "bluesky: pixaross.bsky.social",
+	}
+	for value, want := range tests {
+		got, ok := normalizeProfileSocial(value)
+		if !ok {
+			t.Fatalf("normalizeProfileSocial(%q) was rejected", value)
+		}
+		if got != want {
+			t.Fatalf("normalizeProfileSocial(%q) = %q, want %q", value, got, want)
+		}
 	}
 }
 

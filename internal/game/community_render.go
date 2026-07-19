@@ -446,7 +446,7 @@ func (g *Game) drawCommunitySignIn(screen *ebiten.Image) {
 		drawCenteredText(screen, "Signed in", rect{x: 120, y: 374, w: 300, h: 30}, colInk)
 		drawPublishField(screen, communityAccountNameField(), "Name", g.profileNameDraft, g.profileNameEditing)
 		drawPublishField(screen, communityAccountBioField(), "Bio", g.profileBioDraft, g.profileBioEditing)
-		drawPublishField(screen, communityAccountSocialField(), "Social handle", g.profileSocialDraft, g.profileSocialEditing)
+		drawPublishField(screen, communityAccountSocialField(), "Social link/handle", g.profileSocialDraft, g.profileSocialEditing)
 		drawButton(screen, communityAccountBioSaveButton(), "save profile")
 		drawButton(screen, communitySignOutButton(), "sign out")
 		return

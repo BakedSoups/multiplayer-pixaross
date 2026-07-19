@@ -313,7 +313,7 @@ func (g *Game) updateCommunityInput() {
 		g.profileNameDraft, _ = updateTextField(g.profileNameDraft, 40, allowPrintableText)
 	}
 	if g.communityView == communitySignIn && communitySignedIn() && g.profileSocialEditing {
-		g.profileSocialDraft, _ = updateTextField(g.profileSocialDraft, 80, allowPrintableText)
+		g.profileSocialDraft, _ = updateTextField(g.profileSocialDraft, 160, allowPrintableText)
 	}
 	if g.communityView == communityChat {
 		g.chatDraft, _ = updateTextField(g.chatDraft, 220, allowPrintableText)
@@ -721,7 +721,7 @@ func (g *Game) updateCommunityInput() {
 				}
 				social, ok := normalizeProfileSocial(g.profileSocialDraft)
 				if !ok {
-					g.showCommunityNotice("social: use handles, not links")
+					g.showCommunityNotice("social: supported sites only")
 					return
 				}
 				g.profileName = name
@@ -984,13 +984,79 @@ func isEditorNoticeText(title string) bool {
 
 func normalizeProfileSocial(value string) (string, bool) {
 	value = strings.Join(strings.Fields(value), " ")
+	if value == "" {
+		return "", true
+	}
 	lower := strings.ToLower(value)
-	if strings.Contains(lower, "http://") || strings.Contains(lower, "https://") || strings.Contains(lower, "www.") {
+	if strings.Contains(lower, "http://") || strings.Contains(lower, "https://") || strings.Contains(lower, "www.") || strings.ContainsAny(value, `/\`) {
+		normalized, ok := normalizeProfileSocialLink(value)
+		if !ok {
+			return "", false
+		}
+		return normalized, true
+	}
+	if len(value) > 80 {
+		value = value[:80]
+	}
+	return value, true
+}
+
+func normalizeProfileSocialLink(value string) (string, bool) {
+	lower := strings.ToLower(strings.TrimSpace(value))
+	lower = strings.TrimPrefix(lower, "https://")
+	lower = strings.TrimPrefix(lower, "http://")
+	lower = strings.TrimPrefix(lower, "www.")
+	lower = strings.TrimRight(lower, "/")
+	parts := strings.Split(lower, "/")
+	if len(parts) < 2 || parts[1] == "" {
 		return "", false
 	}
-	if strings.ContainsAny(value, `/\`) {
+	domain := parts[0]
+	handle := strings.TrimPrefix(parts[1], "@")
+	if strings.ContainsAny(handle, `?#\`) {
+		fields := strings.FieldsFunc(handle, func(r rune) bool {
+			return r == '?' || r == '#' || r == '\\'
+		})
+		if len(fields) == 0 {
+			return "", false
+		}
+		handle = fields[0]
+	}
+	platform := ""
+	switch domain {
+	case "twitter.com", "x.com":
+		platform = "x"
+	case "github.com":
+		platform = "github"
+	case "instagram.com":
+		platform = "instagram"
+	case "tiktok.com":
+		platform = "tiktok"
+	case "youtube.com", "youtu.be":
+		platform = "youtube"
+	case "twitch.tv":
+		platform = "twitch"
+	case "bsky.app":
+		if len(parts) >= 3 && parts[1] == "profile" {
+			handle = strings.TrimPrefix(parts[2], "@")
+		}
+		platform = "bluesky"
+	case "threads.net":
+		platform = "threads"
+	case "mastodon.social":
+		platform = "mastodon"
+	case "linkedin.com":
+		if len(parts) >= 3 && (parts[1] == "in" || parts[1] == "company") {
+			handle = parts[2]
+		}
+		platform = "linkedin"
+	default:
 		return "", false
 	}
+	if handle == "" {
+		return "", false
+	}
+	value = platform + ": " + handle
 	if len(value) > 80 {
 		value = value[:80]
 	}
