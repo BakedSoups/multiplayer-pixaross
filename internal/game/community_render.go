@@ -72,11 +72,11 @@ func (g *Game) drawCommunityBrowse(screen *ebiten.Image) {
 	drawSelectedButton(screen, communityGalleryArtButton(), "Art", g.galleryKind == "art")
 	drawSelectedButton(screen, communityGalleryPacksButton(), "Packs", g.galleryKind == "pack")
 	drawSelectedButton(screen, communityGallerySortButton(), communityGallerySortLabel(g.gallerySort), g.gallerySortOpen)
-	if g.gallerySortOpen {
-		drawCommunitySortMenu(screen, g.gallerySort)
-	}
 	if len(g.communityGallery) == 0 {
 		drawCenteredText(screen, "No published work yet", rect{x: 60, y: 346, w: 420, h: 40}, colMuted)
+		if g.gallerySortOpen {
+			drawCommunitySortMenu(screen, g.gallerySort)
+		}
 		return
 	}
 	start := g.communityPage * communityCatalogPerPage
@@ -112,6 +112,9 @@ func (g *Game) drawCommunityBrowse(screen *ebiten.Image) {
 		drawButton(screen, communityGalleryOpenButton(slot), map[bool]string{true: "open", false: "play"}[item.Kind == "pack"])
 		drawButton(screen, communityGalleryChatButton(slot), "chat")
 		g.drawThumbLikeButton(screen, communityGalleryLikeButton(slot), item.Likes)
+	}
+	if g.gallerySortOpen {
+		drawCommunitySortMenu(screen, g.gallerySort)
 	}
 	if g.communityPage > 0 {
 		drawButton(screen, communityPrevButton(), "prev")
@@ -546,7 +549,7 @@ func (g *Game) drawCommunityImportPreview(screen *ebiten.Image) {
 
 func (g *Game) drawCommunitySignIn(screen *ebiten.Image) {
 	drawCenteredText(screen, "ACCOUNT", rect{x: 100, y: 218, w: 340, h: 32}, colInk)
-	panel := rect{x: 72, y: 254, w: 396, h: 406}
+	panel := rect{x: 72, y: 254, w: 396, h: 420}
 	drawRounded(screen, panel, 6, colWhite)
 	drawRectOutline(screen, panel, 3, colGridHeavy)
 	if communitySignedIn() {
@@ -557,6 +560,8 @@ func (g *Game) drawCommunitySignIn(screen *ebiten.Image) {
 		for slot, social := range g.profileSocialDrafts {
 			drawSocialField(screen, communityAccountSocialField(slot), social, g.profileSocialEditing && g.profileSocialSlot == slot)
 		}
+		drawCenteredText(screen, "github x instagram tiktok youtube", rect{x: 92, y: 608, w: 356, h: 16}, colMuted)
+		drawCenteredText(screen, "twitch bluesky threads mastodon linkedin", rect{x: 74, y: 624, w: 392, h: 16}, colMuted)
 		drawButton(screen, communityAccountBioSaveButton(), "save profile")
 		drawButton(screen, communitySignOutButton(), "sign out")
 		return
@@ -867,8 +872,8 @@ func (g *Game) drawCommunityPublishSetup(screen *ebiten.Image) {
 	drawPublishField(screen, communityPublishTagsField(), "Tags", g.publishTags, g.publishField == 2)
 	drawSelectedButton(screen, communityPublishOfficialButton(), checkboxLabel(g.publishSubmitOfficial, "Main game review"), g.publishSubmitOfficial)
 	if g.publishSubmitOfficial {
-		drawCenteredText(screen, "May join the main game after enough", rect{x: 76, y: 470, w: 388, h: 20}, colMuted)
-		drawCenteredText(screen, "community upvotes and creator review.", rect{x: 76, y: 488, w: 388, h: 20}, colMuted)
+		drawCenteredText(screen, "May join the main game after enough", rect{x: 76, y: 506, w: 388, h: 20}, colMuted)
+		drawCenteredText(screen, "community upvotes and creator review.", rect{x: 76, y: 524, w: 388, h: 20}, colMuted)
 		drawSelectedButton(screen, communityPublishRightsButton(), checkboxLabel(g.publishRightsConfirmed, "I own this art"), g.publishRightsConfirmed)
 	}
 	publishLabel := "Publish"
@@ -961,11 +966,11 @@ func communityPublishedRemoveButton(slot int) rect {
 	return rect{x: r.x + 344, y: r.y + 17, w: 88, h: 36}
 }
 func communityPublishTitleField() rect          { return rect{x: 270, y: 238, w: 220, h: 40} }
-func communityPublishDescriptionField() rect    { return rect{x: 270, y: 300, w: 220, h: 40} }
-func communityPublishTagsField() rect           { return rect{x: 270, y: 362, w: 220, h: 40} }
-func communityPublishOfficialButton() rect      { return rect{x: 88, y: 426, w: 364, h: 40} }
-func communityPublishRightsButton() rect        { return rect{x: 88, y: 514, w: 364, h: 40} }
-func communityPublishConfirmButton() rect       { return rect{x: 170, y: 566, w: 200, h: 44} }
+func communityPublishDescriptionField() rect    { return rect{x: 270, y: 316, w: 220, h: 40} }
+func communityPublishTagsField() rect           { return rect{x: 270, y: 394, w: 220, h: 40} }
+func communityPublishOfficialButton() rect      { return rect{x: 88, y: 462, w: 364, h: 40} }
+func communityPublishRightsButton() rect        { return rect{x: 88, y: 550, w: 364, h: 40} }
+func communityPublishConfirmButton() rect       { return rect{x: 170, y: 612, w: 200, h: 44} }
 func communityPublishCoverButton() rect         { return rect{x: 46, y: 346, w: 112, h: 38} }
 func communityPublishQuestionCoverButton() rect { return rect{x: 164, y: 346, w: 122, h: 38} }
 func communityImportPreviewRect(slot int) rect {
@@ -1030,19 +1035,19 @@ func communityGalleryNewButton() rect    { return rect{x: 286, y: 264, w: 166, h
 func communityGalleryPlayedButton() rect { return rect{x: 286, y: 296, w: 166, h: 32} }
 func communityGalleryTopButton() rect    { return rect{x: 286, y: 328, w: 166, h: 32} }
 func communityGalleryCard(slot int) rect {
-	return rect{x: 48, y: 314 + float64(slot)*72, w: 444, h: 66}
+	return rect{x: 44, y: 314 + float64(slot)*72, w: 452, h: 66}
 }
 func communityGalleryOpenButton(slot int) rect {
 	r := communityGalleryCard(slot)
-	return rect{x: r.x + 258, y: r.y + 35, w: 54, h: 27}
+	return rect{x: r.x + 264, y: r.y + 35, w: 50, h: 27}
 }
 func communityGalleryChatButton(slot int) rect {
 	r := communityGalleryCard(slot)
-	return rect{x: r.x + 318, y: r.y + 35, w: 54, h: 27}
+	return rect{x: r.x + 320, y: r.y + 35, w: 50, h: 27}
 }
 func communityGalleryLikeButton(slot int) rect {
 	r := communityGalleryCard(slot)
-	return rect{x: r.x + 384, y: r.y + 35, w: 52, h: 27}
+	return rect{x: r.x + 378, y: r.y + 35, w: 60, h: 27}
 }
 func communityGalleryPromoteButton(slot int) rect {
 	r := communityGalleryCard(slot)
@@ -1117,8 +1122,8 @@ func communityAccountBioField() rect  { return rect{x: 102, y: 444, w: 336, h: 3
 func communityAccountSocialField(slot int) rect {
 	return rect{x: 102, y: 494 + float64(slot)*38, w: 336, h: 34}
 }
-func communityAccountBioSaveButton() rect { return rect{x: 102, y: 616, w: 158, h: 36} }
-func communitySignOutButton() rect        { return rect{x: 280, y: 616, w: 158, h: 36} }
+func communityAccountBioSaveButton() rect { return rect{x: 102, y: 638, w: 158, h: 30} }
+func communitySignOutButton() rect        { return rect{x: 280, y: 638, w: 158, h: 30} }
 func communityPackDraftButton(slot int) rect {
 	return rect{x: 66, y: 246 + float64(slot)*72, w: 408, h: 64}
 }

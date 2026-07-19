@@ -90,6 +90,24 @@ func TestEditorImageExportUsesAfterLayer(t *testing.T) {
 	}
 }
 
+func TestEditorResizePreservesArt(t *testing.T) {
+	editor := newEditorState(10)
+	editor.selectLayer(editorLayerBefore)
+	editor.apply(2, 2)
+	editor.selectLayer(editorLayerAfter)
+	editor.apply(5, 5)
+
+	resized := editor.resized(32)
+	before := resized.Cells[resized.index(7, 7)]
+	if !before.BeforeVisible {
+		t.Fatal("before art disappeared after resize")
+	}
+	after := resized.Cells[resized.index(16, 16)]
+	if !after.Visible || !after.Filled {
+		t.Fatal("after art disappeared after resize")
+	}
+}
+
 func TestEditorPreviewReturnsToEditor(t *testing.T) {
 	game := Game{mode: screenPuzzle, editorPreview: true}
 	game.leavePuzzle()

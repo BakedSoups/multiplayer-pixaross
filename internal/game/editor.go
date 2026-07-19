@@ -159,6 +159,30 @@ func (e editorState) clone() editorState {
 	return next
 }
 
+func (e editorState) resized(size int) editorState {
+	if size <= 0 {
+		size = 10
+	}
+	if e.Width == size && e.Height == size {
+		return e.clone()
+	}
+	next := newEditorState(size)
+	next.Title = e.Title
+	next.PaintColor = e.PaintColor
+	next.AfterPaintColor = e.AfterPaintColor
+	next.Mode = e.Mode
+	next.Tool = e.Tool
+	next.Layer = e.Layer
+	for y := 0; y < size; y++ {
+		sourceY := y * e.Height / size
+		for x := 0; x < size; x++ {
+			sourceX := x * e.Width / size
+			next.Cells[next.index(x, y)] = e.Cells[e.index(sourceX, sourceY)]
+		}
+	}
+	return next
+}
+
 func (e editorState) inBounds(x, y int) bool {
 	return x >= 0 && y >= 0 && x < e.Width && y < e.Height
 }

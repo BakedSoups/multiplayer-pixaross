@@ -128,13 +128,6 @@
 	window.__pendingCommunityPublishedPackID = "";
 	window.__pendingTextPaste = "";
 	const clipboardTarget = document.getElementById("clipboard");
-	const focusClipboardTarget = () => {
-	  if (document.activeElement !== clipboardTarget) {
-	    clipboardTarget.focus({ preventScroll: true });
-	  }
-	};
-	window.addEventListener("pointerdown", () => setTimeout(focusClipboardTarget, 0));
-	window.addEventListener("keydown", focusClipboardTarget);
 	clipboardTarget.addEventListener("paste", (event) => {
 	  const text = event.clipboardData?.getData("text/plain") || "";
 	  if (!text) return;
@@ -147,6 +140,13 @@
 	  if (!text) return;
 	  window.__pendingTextPaste = text;
 	  event.preventDefault();
+	});
+	window.addEventListener("keydown", (event) => {
+	  if (!(event.key?.toLowerCase() === "v" && (event.ctrlKey || event.metaKey))) return;
+	  if (!navigator.clipboard?.readText) return;
+	  navigator.clipboard.readText().then((text) => {
+	    if (text) window.__pendingTextPaste = text;
+	  }).catch(() => {});
 	});
 	window.takeTextPaste = () => {
 	  const value = window.__pendingTextPaste || "";

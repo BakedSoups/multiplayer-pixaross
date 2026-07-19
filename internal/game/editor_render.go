@@ -277,7 +277,7 @@ func editorPaletteRect(index int) rect {
 
 func editorRainbowRect() rect { return editorPaletteRect(len(editorPalette)) }
 
-var editorSizes = []int{8, 10, 15, 20}
+var editorSizes = []int{8, 10, 15, 20, 32}
 
 func editorSizeOption(size int) rect {
 	index := 0

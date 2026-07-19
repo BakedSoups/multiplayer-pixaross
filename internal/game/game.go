@@ -375,7 +375,7 @@ func (g *Game) undoEditor() {
 
 func (g *Game) resetEditor(size int) {
 	g.pushEditorUndo()
-	g.editor = newEditorState(size)
+	g.editor = g.editor.resized(size)
 	g.editorPointer = false
 	g.editorLastX = -1
 	g.editorLastY = -1
