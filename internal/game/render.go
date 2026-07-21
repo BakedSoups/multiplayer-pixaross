@@ -321,21 +321,12 @@ func (g *Game) drawReveal(screen *ebiten.Image) {
 	drawScaledText(screen, "COMPLETE", 54, 116, 1.35, colAccent)
 	drawText(screen, "time "+formatTimer(g.completedIn), 382, 78, colInk)
 
-	scale := 1.0
-	if elapsed < 0.45 {
-		scale = 0.82 + 0.22*easeOutBack(elapsed/0.45)
-	}
 	artRect := rect{x: 118, y: 205, w: 330, h: 330}
-	displayRect := scaleAround(artRect, scale)
 	drawRounded(screen, rect{x: artRect.x - 12, y: artRect.y - 12, w: artRect.w + 24, h: artRect.h + 24}, 8, colGridHeavy)
 	drawRounded(screen, rect{x: artRect.x - 6, y: artRect.y - 6, w: artRect.w + 12, h: artRect.h + 12}, 6, colWhite)
-	whiteFade := easeInOut(clamp((elapsed-0.55)/1.45, 0, 1))
-	drawPixelMatrixTinted(screen, g.skeletonPixels, displayRect, 1, color.RGBA{255, 255, 255, 255}, whiteFade)
-	colorSpread := clamp((elapsed-1.45)/2.25, 0, 1)
+	colorSpread := clamp((elapsed-0.2)/2.8, 0, 1)
 	if colorSpread > 0 {
-		drawPixelMatrixSpread(screen, g.revealPixels, g.skeletonPixels, displayRect, colorSpread)
-		shineProgress := clamp((colorSpread-0.62)/0.38, 0, 1)
-		drawShineSweep(screen, displayRect, shineProgress, shineProgress)
+		drawPixelMatrixSpread(screen, g.revealPixels, g.skeletonPixels, artRect, colorSpread)
 	}
 
 	for _, s := range g.sparkles {
@@ -355,58 +346,6 @@ func (g *Game) drawReveal(screen *ebiten.Image) {
 		backLabel = "back"
 	}
 	drawButton(screen, g.layout.revealLevelsButton, backLabel)
-}
-
-func drawShineSweep(dst *ebiten.Image, r rect, progress, revealAlpha float64) {
-	if progress <= 0 || progress >= 1 || revealAlpha <= 0 {
-		return
-	}
-	progress = easeInOut(progress)
-	x0, y0 := r.x, r.y
-	x1, y1 := r.x+r.w, r.y+r.h
-	minS := x0 + y0
-	maxS := x1 + y1
-	center := minS - 90 + (maxS-minS+180)*progress
-	sweepAlpha := math.Sin(progress * math.Pi)
-
-	for i := -5; i <= 5; i++ {
-		offset := float64(i) * 8
-		weight := 1 - math.Abs(float64(i))/6
-		if weight <= 0 {
-			continue
-		}
-		ax, ay, bx, by, ok := clippedNegativeDiagonal(x0, y0, x1, y1, center+offset)
-		if !ok {
-			continue
-		}
-		alpha := uint8(125 * sweepAlpha * weight * clamp(revealAlpha+0.25, 0, 1))
-		vector.StrokeLine(dst, float32(ax), float32(ay), float32(bx), float32(by), 5, color.RGBA{255, 252, 224, alpha}, false)
-	}
-}
-
-func clippedNegativeDiagonal(x0, y0, x1, y1, sum float64) (float64, float64, float64, float64, bool) {
-	points := make([][2]float64, 0, 4)
-	addPoint := func(x, y float64) {
-		const epsilon = 0.001
-		if x < x0-epsilon || x > x1+epsilon || y < y0-epsilon || y > y1+epsilon {
-			return
-		}
-		for _, p := range points {
-			if math.Abs(p[0]-x) < epsilon && math.Abs(p[1]-y) < epsilon {
-				return
-			}
-		}
-		points = append(points, [2]float64{x, y})
-	}
-
-	addPoint(x0, sum-x0)
-	addPoint(x1, sum-x1)
-	addPoint(sum-y0, y0)
-	addPoint(sum-y1, y1)
-	if len(points) < 2 {
-		return 0, 0, 0, 0, false
-	}
-	return points[0][0], points[0][1], points[1][0], points[1][1], true
 }
 
 func drawButton(screen *ebiten.Image, r rect, label string) {
