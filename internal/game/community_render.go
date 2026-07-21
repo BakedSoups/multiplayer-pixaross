@@ -443,6 +443,7 @@ func (g *Game) drawCommunityAccount(screen *ebiten.Image) {
 	if !communitySignedIn() {
 		pixels = defaultCommunityProfilePixels
 	}
+	registerButtonRect(communityProfileBadgeButton())
 	drawCommunityArtThumbnail(screen, pixels, communityProfileBadgeButton())
 }
 
@@ -505,6 +506,7 @@ func (g *Game) drawProfilePreferenceButtons(screen *ebiten.Image, palette, favor
 }
 
 func drawPaletteColorButton(screen *ebiten.Image, r rect, value string, selected bool) {
+	registerButtonRect(r)
 	fill := colWhite
 	if selected {
 		fill = colPanel
@@ -564,6 +566,7 @@ func profileColorInitial(value string) string {
 }
 
 func drawPaletteChoiceButton(screen *ebiten.Image, r rect, palette string, selected bool) {
+	registerButtonRect(r)
 	fill := colWhite
 	if selected {
 		fill = colPanel

@@ -13,6 +13,16 @@ import (
 )
 
 func (g *Game) updateInput() {
+	x, y, _, justPressed, _ := pointerState()
+	if justPressed {
+		for _, button := range renderedButtonRects {
+			if button.Contains(x, y) {
+				playWebSFX("menu")
+				break
+			}
+		}
+	}
+
 	if g.mode == screenMainMenu {
 		g.updateMainMenuInput()
 		return
@@ -248,14 +258,11 @@ func (g *Game) updateMainMenuInput() {
 	}
 	switch {
 	case mainLevelButton().Contains(x, y):
-		playWebSFX("menu")
 		g.mode = screenLevelSelect
 	case mainCommunityButton().Contains(x, y):
-		playWebSFX("menu")
 		g.communityView = communityHome
 		g.mode = screenCommunity
 	case mainSettingsButton().Contains(x, y):
-		playWebSFX("menu")
 		g.mode = screenSettings
 	}
 }

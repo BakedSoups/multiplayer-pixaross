@@ -38,6 +38,8 @@ var (
 
 var face font.Face = basicfont.Face7x13
 
+var renderedButtonRects []rect
+
 type boardLayout struct {
 	boardX             float64
 	boardY             float64
@@ -116,6 +118,7 @@ func (l boardLayout) CellAt(px, py, width, height int) (int, int, bool) {
 }
 
 func (g *Game) draw(screen *ebiten.Image) {
+	renderedButtonRects = renderedButtonRects[:0]
 	screen.Fill(colPanel)
 
 	if g.mode == screenMainMenu {
@@ -295,6 +298,7 @@ func (g *Game) drawToolTrigger(screen *ebiten.Image) {
 }
 
 func drawTrigger(screen *ebiten.Image, r rect, active bool, c color.RGBA, icon *ebiten.Image) {
+	registerButtonRect(r)
 	base := color.RGBA{193, 184, 167, 255}
 	if active {
 		base = c
@@ -349,6 +353,7 @@ func (g *Game) drawReveal(screen *ebiten.Image) {
 }
 
 func drawButton(screen *ebiten.Image, r rect, label string) {
+	registerButtonRect(r)
 	drawRounded(screen, rect{x: r.x + 3, y: r.y + 4, w: r.w, h: r.h}, 8, color.RGBA{147, 137, 122, 130})
 	drawRounded(screen, r, 8, colPanelDark)
 	drawRounded(screen, inset(r, 4), 6, color.RGBA{237, 228, 208, 255})
@@ -422,6 +427,7 @@ func (g *Game) drawLevelTile(screen *ebiten.Image, r rect, index int) {
 	if !level.Available {
 		return
 	}
+	registerButtonRect(r)
 	if best := g.bestTimes[level.ID]; best > 0 {
 		board := rect{x: r.x + 18, y: r.y + 25, w: r.w - 36, h: r.h - 46}
 		if thumb := g.levelThumbs[level.ID]; len(thumb) > 0 {
@@ -433,6 +439,7 @@ func (g *Game) drawLevelTile(screen *ebiten.Image, r rect, index int) {
 }
 
 func drawIconButton(screen *ebiten.Image, r rect) {
+	registerButtonRect(r)
 	drawRounded(screen, rect{x: r.x + 3, y: r.y + 4, w: r.w, h: r.h}, 8, color.RGBA{147, 137, 122, 130})
 	drawRounded(screen, r, 8, colPanelDark)
 	drawRounded(screen, inset(r, 5), 6, color.RGBA{237, 228, 208, 255})
@@ -519,6 +526,7 @@ func (g *Game) drawMainMenu(screen *ebiten.Image) {
 
 func drawGlobalCommunityButton(screen *ebiten.Image) {
 	r := mainCommunityButton()
+	registerButtonRect(r)
 	drawRounded(screen, rect{x: r.x + 5, y: r.y + 6, w: r.w, h: r.h}, 6, color.RGBA{176, 166, 151, 140})
 	drawRounded(screen, r, 6, color.RGBA{14, 18, 27, 255})
 	for i := 0; i < 22; i++ {
@@ -534,6 +542,10 @@ func drawGlobalCommunityButton(screen *ebiten.Image) {
 	drawPixelAstronaut(screen, int(r.x+r.w-35), int(r.y+23))
 	drawCenteredText(screen, "Global Community", rect{x: r.x + 62, y: r.y, w: r.w - 124, h: r.h}, colWhite)
 	drawRectOutline(screen, r, 2, colGridHeavy)
+}
+
+func registerButtonRect(r rect) {
+	renderedButtonRects = append(renderedButtonRects, r)
 }
 
 // Pixelized spherical noise adapted from Deep-Fold/PixelPlanets (MIT).
