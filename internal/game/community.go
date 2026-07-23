@@ -278,7 +278,7 @@ func (g *Game) loadCommunityImportPreview(raw string) error {
 		return fmt.Errorf("no paired levels were found")
 	}
 	for _, puzzle := range pack.Levels {
-		if puzzle == nil || puzzle.ParseSolution() != nil {
+		if puzzle == nil || parsePuzzle(puzzle) != nil {
 			return fmt.Errorf("import contains invalid artwork")
 		}
 	}
@@ -633,12 +633,8 @@ func (g *Game) loadCommunityCatalog(raw string) error {
 	if err := json.Unmarshal([]byte(raw), &versions); err != nil {
 		return err
 	}
-	for i := range versions {
-		if versions[i].Puzzle != nil {
-			if err := versions[i].Puzzle.ParseSolution(); err != nil {
-				return err
-			}
-		}
+	if err := parseLevelVersionPuzzles(versions); err != nil {
+		return err
 	}
 	g.communityCatalog = versions
 	return nil
@@ -649,19 +645,8 @@ func (g *Game) loadCommunityGallery(raw string) error {
 	if err := json.Unmarshal([]byte(raw), &items); err != nil {
 		return err
 	}
-	for i := range items {
-		if items[i].Puzzle != nil {
-			if err := items[i].Puzzle.ParseSolution(); err != nil {
-				return err
-			}
-		}
-		for j := range items[i].Levels {
-			if items[i].Levels[j].Puzzle != nil {
-				if err := items[i].Levels[j].Puzzle.ParseSolution(); err != nil {
-					return err
-				}
-			}
-		}
+	if err := parseGalleryItemPuzzles(items); err != nil {
+		return err
 	}
 	g.communityGallery = items
 	return nil
@@ -673,8 +658,8 @@ func (g *Game) loadCommunityChat(raw string) error {
 		return err
 	}
 	for i := range messages {
-		if messages[i].AvatarPuzzle != nil {
-			_ = messages[i].AvatarPuzzle.ParseSolution()
+		if err := parsePuzzle(messages[i].AvatarPuzzle); err != nil {
+			return fmt.Errorf("chat message %d avatar: %w", i+1, err)
 		}
 	}
 	g.communityChatMessages = messages
@@ -742,13 +727,11 @@ func (g *Game) loadCommunityCompleted(raw string) error {
 	if err := json.Unmarshal([]byte(raw), &items); err != nil {
 		return err
 	}
+	if err := parseGalleryItemPuzzles(items); err != nil {
+		return err
+	}
 	for i := range items {
 		items[i].Completed = true
-		if items[i].Puzzle != nil {
-			if err := items[i].Puzzle.ParseSolution(); err != nil {
-				return err
-			}
-		}
 	}
 	g.communityCompleted = items
 	for _, item := range items {
@@ -824,32 +807,48 @@ func (g *Game) loadCommunityCreators(raw string) error {
 		return err
 	}
 	for i := range creators {
-		if creators[i].AvatarPuzzle != nil {
-			_ = creators[i].AvatarPuzzle.ParseSolution()
+		if err := parsePuzzle(creators[i].AvatarPuzzle); err != nil {
+			return fmt.Errorf("creator %d avatar: %w", i+1, err)
 		}
-		for j := range creators[i].Levels {
-			if creators[i].Levels[j].Puzzle != nil {
-				if err := creators[i].Levels[j].Puzzle.ParseSolution(); err != nil {
-					return err
-				}
-			}
+		if err := parseLevelVersionPuzzles(creators[i].Levels); err != nil {
+			return fmt.Errorf("creator %d levels: %w", i+1, err)
 		}
-		for j := range creators[i].Featured {
-			if creators[i].Featured[j].Puzzle != nil {
-				if err := creators[i].Featured[j].Puzzle.ParseSolution(); err != nil {
-					return err
-				}
-			}
-			for k := range creators[i].Featured[j].Levels {
-				if creators[i].Featured[j].Levels[k].Puzzle != nil {
-					if err := creators[i].Featured[j].Levels[k].Puzzle.ParseSolution(); err != nil {
-						return err
-					}
-				}
-			}
+		if err := parseGalleryItemPuzzles(creators[i].Featured); err != nil {
+			return fmt.Errorf("creator %d featured work: %w", i+1, err)
 		}
 	}
 	g.communityCreators = creators
+	return nil
+}
+
+func parsePuzzle(puzzle *nonogram.Puzzle) error {
+	if puzzle == nil {
+		return nil
+	}
+	return puzzle.ParseSolution()
+}
+
+func parseLevelVersionPuzzles(levels []community.LevelVersion) error {
+	for i := range levels {
+		if err := parsePuzzle(levels[i].Puzzle); err != nil {
+			return fmt.Errorf("level %d: %w", i+1, err)
+		}
+	}
+	return nil
+}
+
+func parseGalleryItemPuzzles(items []community.GalleryItem) error {
+	for i := range items {
+		if err := parsePuzzle(items[i].AvatarPuzzle); err != nil {
+			return fmt.Errorf("gallery item %d avatar: %w", i+1, err)
+		}
+		if err := parsePuzzle(items[i].Puzzle); err != nil {
+			return fmt.Errorf("gallery item %d puzzle: %w", i+1, err)
+		}
+		if err := parseLevelVersionPuzzles(items[i].Levels); err != nil {
+			return fmt.Errorf("gallery item %d: %w", i+1, err)
+		}
+	}
 	return nil
 }
 

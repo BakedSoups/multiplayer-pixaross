@@ -1,13 +1,15 @@
 package game
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/BakedSoups/community_nongrams/internal/community"
 	"github.com/BakedSoups/community_nongrams/internal/nonogram"
 )
 
-func validPuzzle(id string, size int) *nonogram.Puzzle {
+func validPuzzle(t *testing.T, id string, size int) *nonogram.Puzzle {
+	t.Helper()
 	rows := make([]string, size)
 	before := make([][]string, size)
 	reveal := make([][]string, size)
@@ -34,7 +36,9 @@ func validPuzzle(id string, size int) *nonogram.Puzzle {
 		SkeletonRaw: before,
 		RevealRaw:   reveal,
 	}
-	_ = puzzle.ParseSolution()
+	if err := puzzle.ParseSolution(); err != nil {
+		t.Fatal(err)
+	}
 	return puzzle
 }
 
@@ -137,6 +141,62 @@ func TestLoadCommunityChat(t *testing.T) {
 	}
 }
 
+func TestLoadCommunityChatRejectsMalformedAvatar(t *testing.T) {
+	messages := []community.ChatMessage{{
+		ID:           "m1",
+		AvatarPuzzle: &nonogram.Puzzle{Width: 8, Height: 8},
+	}}
+	raw, err := json.Marshal(messages)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var game Game
+	if err := game.loadCommunityChat(string(raw)); err == nil {
+		t.Fatal("malformed avatar was accepted")
+	}
+}
+
+func TestLoadCommunityGalleryParsesNestedPackLevels(t *testing.T) {
+	items := []community.GalleryItem{{
+		Kind: "pack",
+		ID:   "pack1",
+		Levels: []community.LevelVersion{{
+			LevelID: "level1",
+			Puzzle:  validPuzzle(t, "level1", 8),
+		}},
+	}}
+	raw, err := json.Marshal(items)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var game Game
+	if err := game.loadCommunityGallery(string(raw)); err != nil {
+		t.Fatal(err)
+	}
+	if got := game.communityGallery[0].Levels[0].Puzzle.Solution; len(got) != 8 {
+		t.Fatalf("parsed solution rows = %d, want 8", len(got))
+	}
+}
+
+func TestLoadCommunityCompletedRejectsMalformedNestedPackLevel(t *testing.T) {
+	items := []community.GalleryItem{{
+		Kind: "pack",
+		ID:   "pack1",
+		Levels: []community.LevelVersion{{
+			LevelID: "level1",
+			Puzzle:  &nonogram.Puzzle{Width: 8, Height: 8},
+		}},
+	}}
+	raw, err := json.Marshal(items)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var game Game
+	if err := game.loadCommunityCompleted(string(raw)); err == nil {
+		t.Fatal("malformed nested pack level was accepted")
+	}
+}
+
 func TestCommunityChatBackReturnsToPreviousView(t *testing.T) {
 	game := Game{communityView: communityChat, chatReturn: communityGalleryPack}
 	game.communityBack()
@@ -168,7 +228,7 @@ func TestMarkCommunityItemUnpublishedClearsLocalArtStatus(t *testing.T) {
 				ID:         "art1",
 				Status:     community.LevelPublishedStatus,
 				Visibility: community.VisibilityPublic,
-				Puzzle:     validPuzzle("art1", 8),
+				Puzzle:     validPuzzle(t, "art1", 8),
 			}},
 			Packs: []community.Pack{{Items: []community.PackItem{{LevelID: "art1"}}}},
 		},
