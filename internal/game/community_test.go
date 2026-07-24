@@ -2,6 +2,7 @@ package game
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/BakedSoups/community_nongrams/internal/community"
@@ -194,6 +195,34 @@ func TestLoadCommunityCompletedRejectsMalformedNestedPackLevel(t *testing.T) {
 	var game Game
 	if err := game.loadCommunityCompleted(string(raw)); err == nil {
 		t.Fatal("malformed nested pack level was accepted")
+	}
+}
+
+func TestConsumeCommunityPayload(t *testing.T) {
+	var game Game
+	var loaded string
+	game.consumeCommunityPayload(
+		func() string { return "payload" },
+		func(raw string) error {
+			loaded = raw
+			return nil
+		},
+		"load failed",
+	)
+	if loaded != "payload" {
+		t.Fatalf("loaded payload = %q, want payload", loaded)
+	}
+	if game.communityNotice != "" {
+		t.Fatalf("unexpected notice %q", game.communityNotice)
+	}
+
+	game.consumeCommunityPayload(
+		func() string { return "bad payload" },
+		func(string) error { return errors.New("invalid payload") },
+		"load failed",
+	)
+	if game.communityNotice != "load failed" {
+		t.Fatalf("notice = %q, want load failed", game.communityNotice)
 	}
 }
 

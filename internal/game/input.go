@@ -267,6 +267,16 @@ func (g *Game) updateMainMenuInput() {
 	}
 }
 
+func (g *Game) consumeCommunityPayload(take func() string, load func(string) error, errorMessage string) {
+	raw := take()
+	if raw == "" {
+		return
+	}
+	if err := load(raw); err != nil {
+		g.showCommunityNotice(errorMessage)
+	}
+}
+
 func (g *Game) updateCommunityInput() {
 	if g.pendingPackPublishID != "" && !time.Now().Before(g.pendingPackPublishAt) {
 		id := g.pendingPackPublishID
@@ -286,41 +296,13 @@ func (g *Game) updateCommunityInput() {
 	if id := takeCommunityPublishedPackID(); id != "" {
 		g.markCommunityPackPublished(id)
 	}
-	if raw := takeCommunityGallery(); raw != "" {
-		if err := g.loadCommunityGallery(raw); err != nil {
-			g.showCommunityNotice("could not load gallery")
-		}
-	}
-	if raw := takeCommunityChat(); raw != "" {
-		if err := g.loadCommunityChat(raw); err != nil {
-			g.showCommunityNotice("could not load chat")
-		}
-	}
-	if raw := takeCommunityPublished(); raw != "" {
-		if err := g.loadCommunityPublished(raw); err != nil {
-			g.showCommunityNotice("could not load published work")
-		}
-	}
-	if raw := takeCommunityCompleted(); raw != "" {
-		if err := g.loadCommunityCompleted(raw); err != nil {
-			g.showCommunityNotice("could not load completed levels")
-		}
-	}
-	if raw := takeCommunityCreators(); raw != "" {
-		if err := g.loadCommunityCreators(raw); err != nil {
-			g.showCommunityNotice("could not load creators")
-		}
-	}
-	if raw := takeCommunityCloudDrafts(); raw != "" {
-		if err := g.mergeCloudDrafts(raw); err != nil {
-			g.showCommunityNotice("could not sync cloud drafts")
-		}
-	}
-	if raw := takeCommunityCatalog(); raw != "" {
-		if err := g.loadCommunityCatalog(raw); err != nil {
-			g.showCommunityNotice("could not load community levels")
-		}
-	}
+	g.consumeCommunityPayload(takeCommunityGallery, g.loadCommunityGallery, "could not load gallery")
+	g.consumeCommunityPayload(takeCommunityChat, g.loadCommunityChat, "could not load chat")
+	g.consumeCommunityPayload(takeCommunityPublished, g.loadCommunityPublished, "could not load published work")
+	g.consumeCommunityPayload(takeCommunityCompleted, g.loadCommunityCompleted, "could not load completed levels")
+	g.consumeCommunityPayload(takeCommunityCreators, g.loadCommunityCreators, "could not load creators")
+	g.consumeCommunityPayload(takeCommunityCloudDrafts, g.mergeCloudDrafts, "could not sync cloud drafts")
+	g.consumeCommunityPayload(takeCommunityCatalog, g.loadCommunityCatalog, "could not load community levels")
 	if result := takeCommunityResult(); result != "" {
 		g.publishAwaitingID = ""
 		g.packPublishAwaitingID = ""
