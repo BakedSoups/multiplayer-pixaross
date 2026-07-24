@@ -179,6 +179,30 @@ func TestLoadCommunityGalleryParsesNestedPackLevels(t *testing.T) {
 	}
 }
 
+func TestLoadCommunityPublishedDoesNotMutateGallery(t *testing.T) {
+	items := []community.GalleryItem{{
+		Kind:   "art",
+		ID:     "published1",
+		Puzzle: validPuzzle(t, "published1", 8),
+	}}
+	raw, err := json.Marshal(items)
+	if err != nil {
+		t.Fatal(err)
+	}
+	game := Game{
+		communityGallery: []community.GalleryItem{{Kind: "art", ID: "gallery1"}},
+	}
+	if err := game.loadCommunityPublished(string(raw)); err != nil {
+		t.Fatal(err)
+	}
+	if len(game.communityGallery) != 1 || game.communityGallery[0].ID != "gallery1" {
+		t.Fatalf("gallery changed while loading published work: %#v", game.communityGallery)
+	}
+	if len(game.communityPublished) != 1 || game.communityPublished[0].ID != "published1" {
+		t.Fatalf("published work = %#v", game.communityPublished)
+	}
+}
+
 func TestLoadCommunityCompletedRejectsMalformedNestedPackLevel(t *testing.T) {
 	items := []community.GalleryItem{{
 		Kind: "pack",

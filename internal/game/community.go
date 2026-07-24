@@ -640,12 +640,20 @@ func (g *Game) loadCommunityCatalog(raw string) error {
 	return nil
 }
 
-func (g *Game) loadCommunityGallery(raw string) error {
+func decodeCommunityGallery(raw string) ([]community.GalleryItem, error) {
 	var items []community.GalleryItem
 	if err := json.Unmarshal([]byte(raw), &items); err != nil {
-		return err
+		return nil, err
 	}
 	if err := parseGalleryItemPuzzles(items); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+func (g *Game) loadCommunityGallery(raw string) error {
+	items, err := decodeCommunityGallery(raw)
+	if err != nil {
 		return err
 	}
 	g.communityGallery = items
@@ -713,21 +721,17 @@ func (g *Game) sendCommunityChat() {
 }
 
 func (g *Game) loadCommunityPublished(raw string) error {
-	current := g.communityGallery
-	if err := g.loadCommunityGallery(raw); err != nil {
+	items, err := decodeCommunityGallery(raw)
+	if err != nil {
 		return err
 	}
-	g.communityPublished = g.communityGallery
-	g.communityGallery = current
+	g.communityPublished = items
 	return nil
 }
 
 func (g *Game) loadCommunityCompleted(raw string) error {
-	var items []community.GalleryItem
-	if err := json.Unmarshal([]byte(raw), &items); err != nil {
-		return err
-	}
-	if err := parseGalleryItemPuzzles(items); err != nil {
+	items, err := decodeCommunityGallery(raw)
+	if err != nil {
 		return err
 	}
 	for i := range items {
